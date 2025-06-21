@@ -4,6 +4,9 @@ import 'package:a_eye/screens/onboarding/name_input_page.dart';
 import 'package:a_eye/screens/onboarding/gender_select_page.dart';
 import 'package:a_eye/screens/onboarding/age_select_page.dart';
 
+//welcome page
+import 'package:a_eye/screens/welcome_screen.dart';
+
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
 
@@ -43,6 +46,11 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
           onNext: () => goToPage(4),
           onBack: () => goToPage(2),
         ),
+
+        WelcomeScreen(
+          onNext: () => goToPage(5),
+        ),
+
         // Add more pages here...
       ],
     );
