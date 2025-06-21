@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'name_input_page.dart'; // next page which is name input page
 
 class LandingPage extends StatelessWidget {
-  const LandingPage({super.key});
+  final VoidCallback onNext;
+
+  const LandingPage({super.key, required this.onNext});
 
   @override
   Widget build(BuildContext context) {
@@ -70,19 +72,10 @@ class LandingPage extends StatelessWidget {
             bottom: 50,
             right: 20,
             child: ElevatedButton(
+              onPressed: onNext,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5244F3),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const NameInputPage()),
-                );
-              },
               child: Text(
                 'Next',
                 style: GoogleFonts.urbanist(fontSize: 20, color: Colors.white),

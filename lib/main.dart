@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:a_eye/screens/onboarding/landing_page.dart'; // Update this path if needed
+import 'screens/onboarding/onboarding_wrapper.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LandingPage(), // This must be a SINGLE page here
+      home: OnboardingWrapper(),
     );
   }
 }
