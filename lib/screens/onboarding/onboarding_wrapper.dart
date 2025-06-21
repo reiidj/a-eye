@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:a_eye/screens/onboarding/landing_page.dart';
 import 'package:a_eye/screens/onboarding/name_input_page.dart';
 import 'package:a_eye/screens/onboarding/gender_select_page.dart';
+import 'package:a_eye/screens/onboarding/age_select_page.dart';
 
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
@@ -32,9 +33,15 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
           onNext: () => goToPage(2),
           onBack: () => goToPage(0),
         ),
+
         GenderSelectPage(
           onNext: () => goToPage(3),
           onBack: () => goToPage(1),
+        ),
+
+        AgeSelectPage(
+          onNext: () => goToPage(4),
+          onBack: () => goToPage(2),
         ),
         // Add more pages here...
       ],

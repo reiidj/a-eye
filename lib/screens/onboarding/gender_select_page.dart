@@ -26,19 +26,18 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        gradient: isSelected
-            ? const LinearGradient(
-          colors: [Color(0xFF5244F3), Color(0xFF8DD1FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        // Use border instead of gradient for the highlight effect
+        border: isSelected
+            ? Border.all(
+          color: const Color(0xFF5244F3),
+          width: 2,
         )
             : null,
       ),
-      padding: isSelected ? const EdgeInsets.all(2) : EdgeInsets.zero, // Border thickness
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black, // The background color inside
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white10, // Semi-transparent color
+          borderRadius: BorderRadius.circular(14), // Match outer radius
         ),
         child: RadioListTile<String>(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -121,9 +120,9 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
 
                 // Gender options
                 genderOption("Male"),
-                const SizedBox(height: 10),
+                const SizedBox(height: 15),
                 genderOption("Female"),
-                const SizedBox(height: 10),
+                const SizedBox(height: 15),
                 genderOption("Other"),
               ],
             ),
