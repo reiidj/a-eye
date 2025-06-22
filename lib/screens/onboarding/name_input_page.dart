@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class NameInputPage extends StatefulWidget {
-  final VoidCallback onNext;
+  final void Function(String name) onNext;
   final VoidCallback onBack;
+  final String? initialName;
 
   const NameInputPage({
     super.key,
     required this.onNext,
     required this.onBack,
+    this.initialName,
   });
 
   @override
@@ -19,10 +21,13 @@ class _NameInputPageState extends State<NameInputPage> {
   final FocusNode _focusNode = FocusNode();
   final TextEditingController _controller = TextEditingController();
 
+  //makes sure that the name is still there when going back the page
   @override
   void initState() {
     super.initState();
-    // Delay to ensure the widget tree is fully built before requesting focus
+    if (widget.initialName != null) {
+      _controller.text = widget.initialName!;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -133,21 +138,25 @@ class _NameInputPageState extends State<NameInputPage> {
                 ),
                 const SizedBox(height: 20),
                 TextField(
-                  autofocus: true, // Triggers keyboard without focusNode or lifecycle methods
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  autofocus: true,
+                  maxLength: 20, //limit to 20 char only
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Enter your name',
                     hintStyle: TextStyle(color: Colors.grey.shade400),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.05),
+                    counterText: '',
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: Colors.grey, // Default border color
-                        width: 2.0, // Default border width
+                        color: Colors.grey,
+                        width: 2.0,
                       ),
                     ),
-                    floatingLabelBehavior: FloatingLabelBehavior.never, // Prevents floating behavior (just in case)
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
                   ),
                 ),
               ],
@@ -181,7 +190,19 @@ class _NameInputPageState extends State<NameInputPage> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: widget.onNext,
+                  onPressed: () {
+                    final name = _controller.text.trim();
+                    if (name.isNotEmpty) {
+                      widget.onNext(name);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Please enter your name"),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
                     padding: const EdgeInsets.symmetric(horizontal: 63, vertical: 16),
@@ -198,6 +219,7 @@ class _NameInputPageState extends State<NameInputPage> {
                     ),
                   ),
                 ),
+
               ],
             ),
           ),

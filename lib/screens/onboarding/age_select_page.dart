@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AgeSelectPage extends StatefulWidget {
-  final VoidCallback onNext;
-  final VoidCallback onBack;
+  final void Function(String ageGroup) onNext;
+  final void Function(String ageGroup) onBack;
+  final String? initialAgeGroup;
 
   const AgeSelectPage({
     super.key,
     required this.onNext,
     required this.onBack,
+    this.initialAgeGroup,
   });
 
   @override
@@ -16,11 +18,17 @@ class AgeSelectPage extends StatefulWidget {
 }
 
 class _AgeSelectPageState extends State<AgeSelectPage> {
-  String? selectedAge;
+  String? selectedAgeGroup;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedAgeGroup = widget.initialAgeGroup;
+  }
 
   // AGE OPTION WIDGET
   Widget ageOption(String age) {
-    final bool isSelected = selectedAge == age;
+    final bool isSelected = selectedAgeGroup == age;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -46,8 +54,8 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
             style: const TextStyle(color: Colors.white),
           ),
           value: age,
-          groupValue: selectedAge,
-          onChanged: (value) => setState(() => selectedAge = value),
+          groupValue: selectedAgeGroup,
+          onChanged: (value) => setState(() => selectedAgeGroup = value),
           activeColor: const Color(0xFF5244F3),
         ),
       ),
@@ -178,7 +186,13 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 OutlinedButton(
-                  onPressed: widget.onBack,
+                  onPressed: () {
+                    if (selectedAgeGroup != null) {
+                      widget.onBack(selectedAgeGroup!); // Save current age
+                    } else {
+                      widget.onBack(''); // Optional fallback
+                    }
+                  },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                     padding: const EdgeInsets.symmetric(horizontal: 53, vertical: 16),
@@ -196,7 +210,18 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: widget.onNext,
+                  onPressed: () {
+                    if (selectedAgeGroup != null) {
+                      widget.onNext(selectedAgeGroup!); // Save and go to Welcome
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Please select an age group"),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
                     padding: const EdgeInsets.symmetric(horizontal: 63, vertical: 16),

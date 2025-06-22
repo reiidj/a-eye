@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class GenderSelectPage extends StatefulWidget {
-  final VoidCallback onNext;
-  final VoidCallback onBack;
+  final void Function(String gender) onNext;
+  final void Function(String gender) onBack;
+  final String? initialGender;
 
   const GenderSelectPage({
     super.key,
     required this.onNext,
     required this.onBack,
+    this.initialGender,
   });
 
   @override
@@ -17,6 +19,12 @@ class GenderSelectPage extends StatefulWidget {
 
 class _GenderSelectPageState extends State<GenderSelectPage> {
   String? selectedGender;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedGender = widget.initialGender;
+  }
 
   // GENDER OPTION WIDGET
   Widget genderOption(String gender) {
@@ -175,8 +183,15 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+
                 OutlinedButton(
-                  onPressed: widget.onBack,
+                  onPressed: () {
+                    if (selectedGender != null) {
+                      widget.onBack(selectedGender!); // Save + go back
+                    } else {
+                      widget.onBack(''); // If nothing selected yet, still go back
+                    }
+                  },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                     padding: const EdgeInsets.symmetric(horizontal: 53, vertical: 16),
@@ -193,8 +208,21 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                     ),
                   ),
                 ),
+
+
                 ElevatedButton(
-                  onPressed: widget.onNext,
+                  onPressed: () {
+                    if (selectedGender != null) {
+                      widget.onNext(selectedGender!);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Please select your gender"),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
                     padding: const EdgeInsets.symmetric(horizontal: 63, vertical: 16),
@@ -211,6 +239,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                     ),
                   ),
                 ),
+
               ],
             ),
           ),

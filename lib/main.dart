@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'screens/onboarding/onboarding_wrapper.dart';
 
-void main() {
+late List<CameraDescription> cameras; // Needed globally
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensures camera is initialized first
+  cameras = await availableCameras(); // Loads device cameras
   runApp(const MyApp());
 }
 
