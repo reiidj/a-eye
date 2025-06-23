@@ -15,6 +15,7 @@ import 'package:a_eye/screens/scan_setup/disclaimer_page.dart';
 
 //scan folder
 import 'package:a_eye/screens/scan/camera_page.dart';
+import 'package:a_eye/screens/scan/crop_image_page.dart';
 
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
@@ -128,7 +129,12 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
         ),
 
         CameraPage(
+          onNext: () => goToPage(10),
         ),
+
+        CropPage(
+          onNext: () => goToPage(11),
+        )
 
         // Add more pages here...
       ],
