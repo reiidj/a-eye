@@ -14,8 +14,21 @@ import 'package:a_eye/screens/scan_setup/check_surroundings_2.dart';
 import 'package:a_eye/screens/scan_setup/disclaimer_page.dart';
 
 //scan folder
-import 'package:a_eye/screens/scan/camera_page.dart';
-import 'package:a_eye/screens/scan/crop_image_page.dart';
+import 'package:a_eye/screens/scan/capture/camera_page.dart';
+import 'package:a_eye/screens/scan/analyzing_page.dart';
+import 'package:a_eye/screens/scan/analysis_complete_page.dart';
+import 'package:a_eye/screens/scan/result_immature_page.dart';
+import 'package:a_eye/screens/scan/result_mature_page.dart';
+
+// scan/capture folder
+import 'package:a_eye/screens/scan/capture/crop_image_page.dart';
+import 'package:a_eye/screens/scan/capture/invalid_image_page.dart';
+
+// scan/upload folder
+import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
+import 'package:a_eye/screens/scan/upload/upload_select_page.dart';
+import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
+
 
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
@@ -112,29 +125,85 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
         ),
 
         ScanModePage(
-          onSelfScan: () => goToPage(6), // or route to self-scan instruction page
-          onAssistedScan: () => goToPage(6), // or route to assisted-scan instruction page
+          onUpload: () => goToPage(6), // or route to upload instruction page
+          onCapture: () => goToPage(9), // or route to capture instruction page
         ),
 
-        CheckSurroundings1(
-          onNext: () => goToPage(7),
+        selectPage( // THIS IS PAGE 6
+          onNext: () {
+            final random = DateTime.now().millisecondsSinceEpoch % 2; // Random 0 or 1
+            if (random == 0) {
+              goToPage(7); // Page 7
+            } else {
+              goToPage(8); // Page 8
+            }
+          },
         ),
 
-        CheckSurroundings2(
-          onNext: () => goToPage(8),
+        uploadInvalidPage( // THIS IS PAGE 7
+          onBack: () => goToPage(6),
         ),
 
-        DisclaimerPage(
-          onNext: () => goToPage(9),
+        uploadCropPage(// THIS IS PAGE 8
+          onNext: () => goToPage(15),
+          onBack: () => goToPage(6),
         ),
 
-        CameraPage(
+
+        CheckSurroundings1( // THIS IS PAGE 9
           onNext: () => goToPage(10),
         ),
 
-        CropPage(
+        CheckSurroundings2( // THIS IS PAGE 10
           onNext: () => goToPage(11),
-        )
+        ),
+
+        DisclaimerPage( // THIS IS PAGE 11
+          onNext: () => goToPage(12),
+        ),
+
+        CameraPage( // THIS IS PAGE 12 ( RANDOMLY GOES TO INVALID IMAGE CAPTURED OR CROP PAGE)
+          onNext: () {
+            final random = DateTime.now().millisecondsSinceEpoch % 2; // Random 0 or 1
+            if (random == 0) {
+              goToPage(13); // Page 13
+            } else {
+              goToPage(14); // Page 14
+            }
+          },
+        ),
+
+        CropPage( // THIS IS PAGE 13
+          onNext: () => goToPage(15), // GOES TO ANALYZING PAGE
+          onBack: () =>goToPage(12), // GOES TO CAPTURE PAGE IF GUSTO ULIT MAG CAPTURE NG NEW ONE
+        ),
+
+        InvalidPage( // THIS IS PAGE 14
+          onBack: () =>goToPage(12), //ONLY RETURNS TO CAPTURE PAGE
+        ),
+
+        AnalyzingPage(// THIS IS PAGE 15
+          onComplete: () => goToPage(16), // Navigate to AnalyzedPage
+        ),
+
+        AnalyzedPage( // THIS IS PAGE 16 (RANDOMIZE EITHER GOES TO MATURE OR IMMATURE)
+          onComplete: () {
+            final random = DateTime.now().millisecondsSinceEpoch % 2; // Random 0 or 1
+            if (random == 0) {
+              goToPage(17); // Page 17
+            } else {
+              goToPage(17); // Page 18
+            }
+          },
+        ),
+
+        MaturePage( // THIS IS PAGE 17
+          onComplete: () => goToPage(17),
+        ),
+
+        ImmaturePage( // THIS IS PAGE 18
+          onComplete: () => goToPage(18),
+        ),
 
         // Add more pages here...
       ],

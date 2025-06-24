@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ScanModePage extends StatelessWidget {
-  final VoidCallback onSelfScan;
-  final VoidCallback onAssistedScan;
+  final VoidCallback onUpload;
+  final VoidCallback onCapture;
 
   const ScanModePage({
     super.key,
-    required this.onSelfScan,
-    required this.onAssistedScan,
+    required this.onUpload,
+    required this.onCapture,
   });
 
   @override
@@ -33,7 +33,7 @@ class ScanModePage extends StatelessWidget {
               const SizedBox(height: 100),
 
               Text(
-                "Are you scanning by yourself?",
+                "Select image input method:",
                 textAlign: TextAlign.left,
                 style: GoogleFonts.urbanist(
                   color: Colors.white,
@@ -63,31 +63,31 @@ class ScanModePage extends StatelessWidget {
               ),
               const SizedBox(height: 80),
 
-              // Self scan button
+              // onUpload scan button
               OutlinedButton(
-                onPressed: onSelfScan,
+                onPressed: onUpload,
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 child: Text(
-                  "Yes, I'm scanning by myself",
+                  "Upload an image from gallery",
                   style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Assisted scan button
+              // On capture scan button
               ElevatedButton(
-                onPressed: onAssistedScan,
+                onPressed: onCapture,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF5244F3),
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 70, vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 child: Text(
-                  "I have someone to scan me",
+                  "Capture using camera",
                   style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),

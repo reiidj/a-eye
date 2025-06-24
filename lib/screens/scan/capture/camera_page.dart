@@ -137,7 +137,7 @@ class _CameraPageState extends State<CameraPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
 
-                  //camera icon button click
+                  //camera icon button click yung circle na bilog na color violet
                   GestureDetector(
                     onTap: () async {
                       if (_controller == null || !_cameraInitialized) return;
