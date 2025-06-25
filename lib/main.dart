@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'screens/onboarding/onboarding_wrapper.dart';
 
+
 late List<CameraDescription> cameras; // Needed globally
 
 Future<void> main() async {

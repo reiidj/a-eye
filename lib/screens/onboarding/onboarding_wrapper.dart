@@ -198,11 +198,11 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
         ),
 
         MaturePage( // THIS IS PAGE 17
-          onComplete: () => goToPage(17),
+          onNext: () => goToPage(17),
         ),
 
         ImmaturePage( // THIS IS PAGE 18
-          onComplete: () => goToPage(18),
+          onNext: () => goToPage(18),
         ),
 
         // Add more pages here...
