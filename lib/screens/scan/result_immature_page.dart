@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive/hive.dart';
+import 'dart:io';
 
 class ImmaturePage extends StatelessWidget {
   final VoidCallback onNext;
@@ -10,6 +12,8 @@ class ImmaturePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final box = Hive.box('scanResultsBox');
+    final String? imagePath = box.get('latestImagePath');
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -123,12 +127,19 @@ class ImmaturePage extends StatelessWidget {
 
                               //IMAGE INSIDE THE BOX
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(15.0), // <--- Adjust this value for roundness
-                                child: Image.asset(
+                                borderRadius: BorderRadius.circular(15.0),
+                                child: imagePath != null
+                                    ? Image.file(
+                                  File(imagePath),
+                                  width: screenWidth * 0.5,
+                                  height: screenWidth * 0.5,
+                                  fit: BoxFit.cover,
+                                )
+                                    : Image.asset( // fallback if image isn't available
                                   'assets/images/Immature.png',
                                   width: screenWidth * 0.5,
                                   height: screenWidth * 0.5,
-                                  fit: BoxFit.cover, // Ensures the image fills the clipped area
+                                  fit: BoxFit.cover,
                                 ),
                               ),
 

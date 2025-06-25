@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
+import 'package:a_eye/widgets/result_card.dart';
+import 'dart:io';
+
 
 class WelcomeScreenWithResult extends StatelessWidget {
   final VoidCallback onNext;
   final String userName;
+
 
   const WelcomeScreenWithResult({
     super.key,
@@ -18,6 +22,9 @@ class WelcomeScreenWithResult extends StatelessWidget {
     final fallbackName = Hive.box('userBox').get('name', defaultValue: 'Guest');
     final hiveName = userBox.get('name', defaultValue: '').toString();
     final displayName = hiveName.isNotEmpty ? hiveName : userName;
+    final box = Hive.box('scanResultsBox');
+    final String? imagePath = box.get('latestImagePath');
+    final List results = box.get('results', defaultValue: []);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -74,7 +81,7 @@ class WelcomeScreenWithResult extends StatelessWidget {
 
             // Main content
             Align(
-              alignment: const Alignment(0.0, 0.7),
+              alignment: const Alignment(0.0, 0.5),// horizontal then vertical
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
                 child: Column(
@@ -84,32 +91,34 @@ class WelcomeScreenWithResult extends StatelessWidget {
                     Row( // <--- Wrap the Text widgets in a Row
                       mainAxisSize: MainAxisSize.min, // Essential: Makes the Row take only the space its children need horizontally
                       children: [
-                        Text.rich(
-                          TextSpan(
-                            style: GoogleFonts.urbanist(
-                              fontSize: 40,
-                              color: Colors.white,
-                            ),
-                            children: [
-                              const TextSpan(text: "Welcome Back, "),
-                              TextSpan(
-                                text: "$displayName",
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                        Flexible(
+                          child: Text.rich(
+                            TextSpan(
+                              style: GoogleFonts.urbanist(
+                                fontSize: 40,
+                                color: Colors.white,
                               ),
-                              const TextSpan(text: "!"),
-                            ],
+                              children: [
+                                const TextSpan(text: "Welcome Back, "),
+                                TextSpan(
+                                  text: displayName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const TextSpan(text: "!"),
+                              ],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.visible,
+                            textAlign: TextAlign.left,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.visible,
-                          textAlign: TextAlign.left,
-                        ),
+                        )
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 12),
 
                     // Outer box
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(22, 12, 22, 16), // LEFT TOP RIGHT BOTTOM
                       decoration: BoxDecoration(
                         color: Colors.white12.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
@@ -130,7 +139,7 @@ class WelcomeScreenWithResult extends StatelessWidget {
                           // Inner box
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: Colors.white12,
                               borderRadius: BorderRadius.circular(12),
@@ -157,99 +166,41 @@ class WelcomeScreenWithResult extends StatelessWidget {
                         color: const Color(0XFF5244F3),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 16), //spacing lang to
 
-                    // Yung results box
+                    // Results box container
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(32, 10, 32, 10), // LEFT TOP RIGHT BOTTOM // 32 left and right always
+                      height: 300, // fixed height regardless of item count
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), // LEFT TOP RIGHT BOTTOM
                       decoration: BoxDecoration(
                         color: const Color(0xFF131A21),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Medical Disclaimer",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.urbanist(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF5244F3),
+
+                          // Scrollable list of results
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: results.length,
+                              padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
+                              itemBuilder: (context, index) {
+                                final result = results[index];
+                                return ResultCard(
+                                  date: result['date'] ?? '',
+                                  title: result['title'] ?? '',
+                                  imageFilePath: result['imagePath'],
+                                  showLabel: index == 0, // show "Most Recent" for top card only
+                                );
+                              },
                             ),
                           ),
-                          const SizedBox(height: 8),
-
-                          RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              style: GoogleFonts.urbanist(
-                                fontSize: 15,
-                                color: Colors.white,
-                              ),
-                              children: const [
-                                TextSpan(
-                                    text:
-                                    "This app is for informational purposes only. It does "),
-                                TextSpan(
-                                  text:
-                                  "not replace a licensed ophthalmologist’s diagnosis.",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // VISIT PAO ORG TEXT BOX
-                          // VISIT PAO ORG TEXT BOX (Matching Red Sign Style)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF242443), // BOX BACKGROUND
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.campaign_rounded,
-                                  color: const Color(0xFF5244F3),
-                                  size: 32,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: RichText(
-                                    text: TextSpan(
-                                      style: GoogleFonts.urbanist(
-                                        fontSize: 15,
-                                        color: Colors.white,
-                                      ),
-                                      children: const [
-                                        TextSpan(text: "Visit "),
-                                        TextSpan(
-                                          text: "pao.org.ph",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontStyle: FontStyle.italic,
-                                            color: Color(0xFF8BC36A),
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text: " to find certified eye specialists for proper eye analysis.",
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),//END OF PAO ORG BOX
                         ],
                       ),
                     ),
+                    const SizedBox(height: 32),
 
                     // start eye scan na button
                     SizedBox(
@@ -258,7 +209,7 @@ class WelcomeScreenWithResult extends StatelessWidget {
                         onPressed: onNext,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5244F3),
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12), // size ng button
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -275,7 +226,7 @@ class WelcomeScreenWithResult extends StatelessWidget {
                                 fit: BoxFit.contain,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 12), // distance of icon with text
                             Text(
                               "Start Eye Scan",
                               style: GoogleFonts.urbanist(

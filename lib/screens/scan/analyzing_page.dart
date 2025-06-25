@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
 
 class AnalyzingPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -17,6 +19,21 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
   Timer? _dotTimer;
   Timer? _navigateTimer;
   bool _completed = false;
+
+  void saveResultToHive(String imagePath, String resultTitle) async {
+    final box = Hive.box('scanResultsBox');
+
+    final List existingResults = box.get('results', defaultValue: []).cast<Map>();
+
+    final newResult = {
+      'date': DateFormat('MMMM d, y, h:mm a').format(DateTime.now()),
+      'title': resultTitle, // e.g. "Mature Cataract"
+      'imagePath': imagePath,
+    };
+
+    existingResults.insert(0, newResult); // insert at the top (most recent)
+    await box.put('results', existingResults);
+  }
 
   @override
   void initState() {
@@ -35,6 +52,13 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
     _navigateTimer = Timer(const Duration(seconds: 3), () {
       if (mounted && !_completed) {
         _completed = true;
+
+        // Get image path from arguments
+        final args = ModalRoute.of(context)?.settings.arguments;
+        if (args is String) {
+          saveResultToHive(args, "Mature Cataract"); // or "Immature Cataract"
+        }
+
         widget.onComplete?.call();
       }
     });

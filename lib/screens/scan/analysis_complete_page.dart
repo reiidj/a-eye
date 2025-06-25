@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
+import 'package:intl/intl.dart';
 
 class AnalyzedPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -13,19 +14,34 @@ class AnalyzedPage extends StatefulWidget {
 }
 
 class _AnalyzedPageState extends State<AnalyzedPage> {
-  String animatedText = "Analyzing";
-
   @override
   void initState() {
     super.initState();
 
-    // go to page after 2 seconds
     Future.delayed(const Duration(seconds: 2), () async {
-      final box = await Hive.openBox('userBox');
-      final userName = box.get('name') ?? 'Guest';
+      final userBox = Hive.box('userBox');
+      final userName = userBox.get('name') ?? 'Guest';
 
-      final isMature = DateTime.now().millisecondsSinceEpoch % 2 == 0;
+      final scanBox = Hive.box('scanResultsBox');
+      final String? imagePath = scanBox.get('latestImagePath');
 
+      final bool isMature = DateTime.now().millisecondsSinceEpoch % 2 == 0;
+      final resultTitle = isMature ? 'Mature Cataract' : 'Immature Cataract';
+
+      final List existingResults = scanBox.get('results', defaultValue: []).cast<Map>();
+
+      final newResult = {
+        'date': DateFormat('MMMM d, y, h:mm a').format(
+          DateTime.now().toUtc().add(const Duration(hours: 8)),
+        ),
+        'title': resultTitle,
+        'imagePath': imagePath,
+      };
+
+      existingResults.insert(0, newResult);
+      await scanBox.put('results', existingResults);
+
+      // Navigate to correct result page
       Navigator.pushNamed(
         context,
         isMature ? '/mature' : '/immature',
@@ -41,12 +57,9 @@ class _AnalyzedPageState extends State<AnalyzedPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-
-          const SizedBox(height: 150), // spacing from top to image
-
-          // Image overlayed with Analyzing... text na animated amazing
+          const SizedBox(height: 150),
           SizedBox(
-            height: 360, // adjust height if needed
+            height: 360,
             width: double.infinity,
             child: Stack(
               alignment: Alignment.center,
@@ -70,8 +83,6 @@ class _AnalyzedPageState extends State<AnalyzedPage> {
               ],
             ),
           ),
-
-          //Message box
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 45.0),
             child: Container(
@@ -92,10 +103,7 @@ class _AnalyzedPageState extends State<AnalyzedPage> {
               ),
             ),
           ),
-
-          const SizedBox(height: 210), //  gap
-
-          //Supporting note sa baba
+          const SizedBox(height: 210),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(

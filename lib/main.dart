@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'routes.dart'; // Your routes file
+import 'routes.dart'; // Route definitions
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensures all bindings are initialized
-  await Hive.initFlutter(); // Initializes Hive for Flutter
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // Open boxes
-  await Hive.openBox('userBox'); // For storing user info
-  await Hive.openBox('scanResultsBox'); // For storing scan results
+  // Initialize Hive with Flutter support
+  await Hive.initFlutter();
+
+  // Open Hive boxes (add error handling if desired)
+  await Future.wait([
+    Hive.openBox('userBox'),
+    Hive.openBox('scanResultsBox'),
+  ]);
 
   runApp(const MyApp());
 }
@@ -20,8 +24,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'A-Eye',
+      theme: ThemeData(
+        fontFamily: 'Urbanist',
+        scaffoldBackgroundColor: Colors.black,
+        useMaterial3: true,
+      ),
       initialRoute: '/',
-      routes: appRoutes, // using the map from routes.dart
+      routes: appRoutes, // Map defined in routes.dart
     );
   }
 }

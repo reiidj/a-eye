@@ -209,10 +209,8 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
 
-
-
   // Upload Flow
-  '/uploadSelect': (context) => selectPage(
+  '/uploadSelect': (context) => SelectPage(
     onNext: () {
       final random = DateTime.now().millisecondsSinceEpoch % 2;
       if (random == 0) {
@@ -223,7 +221,8 @@ final Map<String, WidgetBuilder> appRoutes = {
     },
   ),
 
-  '/uploadCrop': (context) => uploadCropPage(
+  '/uploadCrop': (context) => UploadCropPage(
+    imagePath: '', // empty by default
     onNext: () => Navigator.pushNamed(context, '/analyzing'),
     onBack: () => Navigator.pop(context),
   ),
