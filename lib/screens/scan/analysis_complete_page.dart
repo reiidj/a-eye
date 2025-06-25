@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive/hive.dart';
 
 class AnalyzedPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -18,9 +19,18 @@ class _AnalyzedPageState extends State<AnalyzedPage> {
   void initState() {
     super.initState();
 
-    // Go to next page after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      widget.onComplete?.call();
+    // go to page after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () async {
+      final box = await Hive.openBox('userBox');
+      final userName = box.get('name') ?? 'Guest';
+
+      final isMature = DateTime.now().millisecondsSinceEpoch % 2 == 0;
+
+      Navigator.pushNamed(
+        context,
+        isMature ? '/mature' : '/immature',
+        arguments: {'name': userName},
+      );
     });
   }
 

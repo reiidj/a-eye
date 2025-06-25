@@ -157,16 +157,6 @@ class WelcomeScreen extends StatelessWidget {
                         child: Image.asset(
                           'assets/images/Welcome Card.png',
                           fit: BoxFit.cover, // Ensure the image covers the container
-                          // If the image cannot be loaded, the Container's color will show.
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Icon(
-                                Icons.broken_image, // Fallback icon for broken image
-                                color: Colors.white30,
-                                size: 64,
-                              ),
-                            );
-                          },
                         ),
                       ),
                     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive/hive.dart';
 
 class NameInputPage extends StatefulWidget {
   final void Function(String name) onNext;
@@ -193,7 +194,8 @@ class _NameInputPageState extends State<NameInputPage> {
                   onPressed: () {
                     final name = _controller.text.trim();
                     if (name.isNotEmpty) {
-                      widget.onNext(name);
+                      Hive.box('userBox').put('name', name); // Save to Hive ung storage
+                      widget.onNext(name); // Continue to next page
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

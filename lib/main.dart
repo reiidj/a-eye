@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'screens/onboarding/onboarding_wrapper.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'routes.dart'; // Your routes file
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensures all bindings are initialized
+  await Hive.initFlutter(); // Initializes Hive for Flutter
 
-late List<CameraDescription> cameras; // Needed globally
+  // Open boxes
+  await Hive.openBox('userBox'); // For storing user info
+  await Hive.openBox('scanResultsBox'); // For storing scan results
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensures camera is initialized first
-  cameras = await availableCameras(); // Loads device cameras
   runApp(const MyApp());
 }
 
@@ -16,9 +18,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: OnboardingWrapper(),
+      initialRoute: '/',
+      routes: appRoutes, // using the map from routes.dart
     );
   }
 }

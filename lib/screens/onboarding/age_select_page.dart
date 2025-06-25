@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive/hive.dart';
 
 class AgeSelectPage extends StatefulWidget {
   final void Function(String ageGroup) onNext;
@@ -66,6 +67,10 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    final userName = args?['name'] ?? 'Guest';
+    final gender = args?['gender'] ?? 'Unknown';
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -188,7 +193,11 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
                 OutlinedButton(
                   onPressed: () {
                     if (selectedAgeGroup != null) {
-                      widget.onBack(selectedAgeGroup!); // Save current age
+                      Hive.box('userBox').put('name', userName);
+                      Hive.box('userBox').put('gender', gender);
+                      Hive.box('userBox').put('ageGroup', selectedAgeGroup);
+
+                      widget.onNext(selectedAgeGroup!); // Save current age
                     } else {
                       widget.onBack(''); // Optional fallback
                     }

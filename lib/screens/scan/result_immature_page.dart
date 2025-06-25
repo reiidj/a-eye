@@ -44,6 +44,7 @@ class ImmaturePage extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
 
               // Content below top bar inside scroll
               Expanded(
@@ -68,35 +69,27 @@ class ImmaturePage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
 
-                              // RED SIGN TEXT BOX
+                              // YELLOW SIGN TEXT BOX
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 4), // LEFT TOP RIGHT BOTTOM
                                 decoration: BoxDecoration(
-                                  color: const Color(0x26FF6767), // red with opacity
+                                  color: const Color(0xFF362D1A), // yellow brown mukhang tae background
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    // Alert Icon
-                                    const Icon(
-                                      Icons.warning_rounded,
-                                      color: Color(0xFFDD0000),
-                                      size: 28,
-                                    ),
-                                    const SizedBox(width: 4), // distance between icon and text
-
                                     // Alert Text
                                     Expanded(
                                       child: Text(
-                                        "Mature Cataract Detected",
+                                        "Immature Cataract Detected",
                                         style: GoogleFonts.urbanist(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFFDD0000),
+                                          color: const Color(0xFFE69146),
                                         ),
-                                        textAlign: TextAlign.left,
+                                        textAlign: TextAlign.center,
                                       ),
                                     ),
                                   ],
@@ -115,14 +108,14 @@ class ImmaturePage extends StatelessWidget {
                                   children: const [
                                     TextSpan(
                                         text:
-                                        "The scanned eye shows characteristics of a mature cataract. Due to high lens opacity, "),
+                                        "The uploaded eye image exhibits characteristics consistent with an immature cataract. "),
                                     TextSpan(
-                                      text: "surgical removal is recommended",
+                                      text: "Constant monitoring ",
                                       style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                     TextSpan(
                                         text:
-                                        ". Please consult an ophthalmologist for further evaluation and to discuss options."),
+                                        "of cataract is advisable. You can opt for surgical removal if it affects your daily life."),
                                   ],
                                 ),
                               ),
@@ -132,7 +125,7 @@ class ImmaturePage extends StatelessWidget {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(15.0), // <--- Adjust this value for roundness
                                 child: Image.asset(
-                                  'assets/images/Mature.png',
+                                  'assets/images/Immature.png',
                                   width: screenWidth * 0.5,
                                   height: screenWidth * 0.5,
                                   fit: BoxFit.cover, // Ensures the image fills the clipped area
@@ -142,8 +135,7 @@ class ImmaturePage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-
+                        const SizedBox(height: 48),
 
                         // SECOND BOX: MEDICAL DISCLAIMER BOX
                         Container(
@@ -237,36 +229,11 @@ class ImmaturePage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 32),
 
                         // Action Buttons
                         Column(
                           children: [
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // TODO: Notify logic
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF5244F3),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(vertical: 14), //PADDING
-                                ),
-                                child: Text(
-                                  "Notify Eye Specialist",
-                                  style: GoogleFonts.urbanist(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton(
