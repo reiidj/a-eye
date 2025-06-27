@@ -150,13 +150,13 @@ class WelcomeScreen extends StatelessWidget {
 
                     // Hero image yung card sa gitna
                     SizedBox(
-                      height: 420,
+                      height: 380,
                       width: double.infinity,
                       child: ClipRRect( // ClipRRect to apply borderRadius to the image
                         borderRadius: BorderRadius.circular(32),
                         child: Image.asset(
                           'assets/images/Welcome Card.png',
-                          fit: BoxFit.cover, // Ensure the image covers the container
+                          fit: BoxFit.contain, // Ensure the image covers the container
                         ),
                       ),
                     ),

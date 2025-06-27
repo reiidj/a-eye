@@ -30,7 +30,7 @@ class ScanModePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 100),
+              const SizedBox(height: 80),
 
               Text(
                 "Select image input method:",
@@ -40,7 +40,7 @@ class ScanModePage extends StatelessWidget {
                   fontSize: 43,
                 ),
               ),
-              const SizedBox(height: 80),
+              const SizedBox(height: 70),
 
               //circle image hero image
               SizedBox(
@@ -61,7 +61,7 @@ class ScanModePage extends StatelessWidget {
                     },
                   ),
               ),
-              const SizedBox(height: 80),
+              const SizedBox(height: 70),
 
               // onUpload scan button
               OutlinedButton(
@@ -73,7 +73,7 @@ class ScanModePage extends StatelessWidget {
                 ),
                 child: Text(
                   "Upload an image from gallery",
-                  style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.urbanist(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 20),
@@ -88,7 +88,7 @@ class ScanModePage extends StatelessWidget {
                 ),
                 child: Text(
                   "Capture using camera",
-                  style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.urbanist(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 30),

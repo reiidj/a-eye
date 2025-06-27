@@ -9,7 +9,7 @@
         android:maxSdkVersion="28"/>
 
     <application
-        android:label="a_eye"
+        android:label="A-Eye"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

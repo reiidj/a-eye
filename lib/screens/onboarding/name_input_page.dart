@@ -87,7 +87,7 @@ class _NameInputPageState extends State<NameInputPage> {
 
           // THREE BAR STEP INDICATOR SA TAAS
           Padding(
-            padding: const EdgeInsets.only(top: 60.0), // 👈 Adjust this value as needed
+            padding: const EdgeInsets.only(top: 60.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

@@ -44,7 +44,7 @@ class LandingPage extends StatelessWidget {
                   textAlign: TextAlign.left,
                   text: TextSpan(
                     style: GoogleFonts.urbanist(
-                      fontSize: 65,
+                      fontSize: 60,
                     ),
                     children: const [
                       TextSpan(

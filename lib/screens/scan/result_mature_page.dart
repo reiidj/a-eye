@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
 import 'dart:io';
+import 'package:url_launcher/url_launcher.dart'; //  for url launcher
 
 class MaturePage extends StatelessWidget {
   final VoidCallback onNext;
@@ -256,8 +257,13 @@ class MaturePage extends StatelessWidget {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  // TODO: Notify logic
+                                onPressed: () async {
+                                  const url = 'https://pao.org.ph';
+                                  if (await canLaunchUrl(Uri.parse(url))) {
+                                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                  } else {
+                                    throw 'Could not launch $url';
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF5244F3),

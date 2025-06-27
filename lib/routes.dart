@@ -47,7 +47,9 @@ final Map<String, WidgetBuilder> appRoutes = {
         arguments: name,
       );
     },
-    onBack: () => Navigator.pop(context),
+    onBack: () {
+      Navigator.pushReplacementNamed(context, '/');
+    },
   ),
 
   // Gender Select Page
@@ -125,25 +127,83 @@ final Map<String, WidgetBuilder> appRoutes = {
   ),
 
   // Scan Capture
-  '/camera': (context) => CameraPage(
-    onNext: () {
-      final random = DateTime.now().millisecondsSinceEpoch % 2;
+  '/camera': (context) => const CameraPage(
+  ),
+
+  // NEW: Image processing route that handles the random logic
+  '/processImage': (context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final String imagePath = args?['imagePath'] ?? '';
+    final String selectedEye = args?['selectedEye'] ?? 'Left';
+
+    // Random logic moved here from camera page
+    final random = DateTime.now().millisecondsSinceEpoch % 2;
+
+    // Navigate immediately to either crop or invalid
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (random == 0) {
-        Navigator.pushNamed(context, '/invalid');
+        Navigator.pushReplacementNamed(
+          context,
+          '/crop',
+          arguments: {
+            'imagePath': imagePath,
+            'selectedEye': selectedEye,
+          },
+        );
       } else {
-        Navigator.pushNamed(context, '/crop');
+        Navigator.pushReplacementNamed(
+          context,
+          '/invalid',
+          arguments: {
+            'imagePath': imagePath,
+            'selectedEye': selectedEye,
+          },
+        );
       }
-    },
-  ),
+    });
 
-  '/crop': (context) => CropPage(
-    onNext: () => Navigator.pushNamed(context, '/analyzing'),
-    onBack: () => Navigator.pop(context),
-  ),
+    // Return a loading screen while navigation happens
+    return const Scaffold(
+      backgroundColor: Color(0xFF131A21),
+      body: Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF5244F3),
+        ),
+      ),
+    );
+  },
 
-  '/invalid': (context) => InvalidPage(
-    onBack: () => Navigator.pop(context),
-  ),
+  '/crop': (context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final String imagePath = args?['imagePath'] ?? '';
+    final String selectedEye = args?['selectedEye'] ?? 'Left';
+
+    return CropPage(
+      imagePath: imagePath,
+      onNext: () {
+        // Navigate to analyzing page after cropping
+        Navigator.pushNamed(context, '/analyzing');
+      },
+      onBack: () {
+        // Go back to camera page
+        Navigator.popUntil(context, ModalRoute.withName('/camera'));
+      },
+    );
+  },
+
+  '/invalid': (context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final String imagePath = args?['imagePath'] ?? '';
+    final String selectedEye = args?['selectedEye'] ?? 'Left';
+
+    return InvalidPage(
+      imagePath: imagePath,
+      onBack: () {
+        // Go back to camera page
+        Navigator.popUntil(context, ModalRoute.withName('/camera'));
+      },
+    );
+  },
 
   '/analyzing': (context) => AnalyzingPage(
     onComplete: () => Navigator.pushNamed(context, '/complete'),
@@ -221,11 +281,14 @@ final Map<String, WidgetBuilder> appRoutes = {
     },
   ),
 
-  '/uploadCrop': (context) => UploadCropPage(
-    imagePath: '', // empty by default
-    onNext: () => Navigator.pushNamed(context, '/analyzing'),
-    onBack: () => Navigator.pop(context),
-  ),
+  '/uploadCrop': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    return UploadCropPage(
+      imagePath: args['imagePath'],
+      onNext: args['onNext'],
+      onBack: args['onBack'],
+    );
+  },
 
   '/uploadInvalid': (context) => uploadInvalidPage(
     onBack: () => Navigator.pop(context),

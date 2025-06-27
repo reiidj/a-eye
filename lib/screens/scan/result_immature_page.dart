@@ -146,7 +146,7 @@ class ImmaturePage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 32),
 
                         // SECOND BOX: MEDICAL DISCLAIMER BOX
                         Container(

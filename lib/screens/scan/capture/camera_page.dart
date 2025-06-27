@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
-
+import 'package:hive/hive.dart';
+import 'dart:typed_data';
 
 class CameraPage extends StatefulWidget {
   final VoidCallback? onNext;
@@ -18,6 +20,8 @@ class _CameraPageState extends State<CameraPage> {
   Future<void>? _initializeControllerFuture;
   bool _cameraInitialized = false;
   String? _errorMessage;
+  int _selectedCameraIndex = 0;
+  List<CameraDescription> _availableCameras = [];
 
   @override
   void initState() {
@@ -27,21 +31,15 @@ class _CameraPageState extends State<CameraPage> {
 
   Future<void> _setupCamera() async {
     try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
+      _availableCameras = await availableCameras();
+      if (_availableCameras.isEmpty) {
         setState(() => _errorMessage = 'No cameras available');
         return;
       }
 
-      // Use back camera by default
-      final camera = cameras.firstWhere(
-            (c) => c.lensDirection == CameraLensDirection.back,
-        orElse: () => cameras.first,
-      );
-
       _controller = CameraController(
-        camera,
-        ResolutionPreset.high,
+        _availableCameras[_selectedCameraIndex],
+        ResolutionPreset.veryHigh,
         enableAudio: false,
       );
 
@@ -57,10 +55,53 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
+
   @override
   void dispose() {
     _controller?.dispose();
     super.dispose();
+  }
+
+  Future<void> _takePicture() async {
+    if (_controller == null || !_cameraInitialized) return;
+
+    try {
+      final XFile image = await _controller!.takePicture();
+
+      // Save to temp directory
+      final File imageFile = File(image.path);
+      final tempDir = Directory.systemTemp;
+      final String filename = 'captured_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final File savedImage = await imageFile.copy('${tempDir.path}/$filename');
+
+      // Save path to Hive
+      final box = Hive.box('scanResultsBox');
+      await box.put('latestImagePath', savedImage.path);
+
+      // Navigate to image processing route with the image path
+      Navigator.pushNamed(
+        context,
+        '/processImage',
+        arguments: {
+          'imagePath': savedImage.path,
+          'selectedEye': _selectedEye,
+        },
+      );
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = 'Capture failed: $e');
+    }
+  }
+
+  Future<void> _flipCamera() async {
+    if (_availableCameras.length < 2) return;
+
+    setState(() {
+      _selectedCameraIndex = (_selectedCameraIndex + 1) % _availableCameras.length;
+      _cameraInitialized = false;
+    });
+
+    await _controller?.dispose();
+    await _setupCamera();
   }
 
   @override
@@ -128,7 +169,6 @@ class _CameraPageState extends State<CameraPage> {
             ),
           ),
 
-
           // Bottom content area
           Expanded(
             child: Container(
@@ -137,28 +177,35 @@ class _CameraPageState extends State<CameraPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
 
-                  //camera icon button click yung circle na bilog na color violet
+                  // Flip Camera Button aligned to right
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 30.0, bottom: 12),
+                        child: FloatingActionButton(
+                          heroTag: 'flip',
+                          elevation: 0,
+                          highlightElevation: 0,
+                          backgroundColor: const Color(0xFF131A21),
+                          onPressed: _flipCamera,
+                          child: const Icon(Icons.cameraswitch_outlined, color: Color(0xFF5244F3)),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Capture Button (centered)
                   GestureDetector(
-                    onTap: () async {
-                      if (_controller == null || !_cameraInitialized) return;
-                      try {
-                        final image = await _controller!.takePicture();
-
-                        // next page temporary lang to
-                        widget.onNext?.call();
-
-                      } catch (e) {
-                        if (mounted) setState(() => _errorMessage = 'Capture failed: $e');
-                      }
-                    },
+                    onTap: _takePicture,
                     child: Container(
-                      width: 112, //width of circle
-                      height: 112, //height of circle
+                      width: 112,
+                      height: 112,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF5244F3), // vibrant blue-purple
-                          width: 12, // Thickness of the border (adjustable)
+                          color: const Color(0xFF5244F3),
+                          width: 12,
                         ),
                       ),
                     ),
@@ -303,22 +350,22 @@ class CrosshairPainter extends CustomPainter {
     }
 
     // DOWN
-        for (double i = start; i < size.height / 2; i += dashWidth + dashSpace) {
-          canvas.drawLine(
-            Offset(centerX, centerY + i),
-            Offset(centerX, centerY + i + dashWidth),
-            dashedPaint,
-          );
-        }
+    for (double i = start; i < size.height / 2; i += dashWidth + dashSpace) {
+      canvas.drawLine(
+        Offset(centerX, centerY + i),
+        Offset(centerX, centerY + i + dashWidth),
+        dashedPaint,
+      );
+    }
 
     // UP
-        for (double i = start; i < size.height / 2; i += dashWidth + dashSpace) {
-          canvas.drawLine(
-            Offset(centerX, centerY - i),
-            Offset(centerX, centerY - i - dashWidth),
-            dashedPaint,
-          );
-        }
+    for (double i = start; i < size.height / 2; i += dashWidth + dashSpace) {
+      canvas.drawLine(
+        Offset(centerX, centerY - i),
+        Offset(centerX, centerY - i - dashWidth),
+        dashedPaint,
+      );
+    }
 
     // Draw solid + cross in center
     canvas.drawLine(

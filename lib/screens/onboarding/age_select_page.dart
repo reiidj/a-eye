@@ -120,13 +120,13 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 300), // Pushes content down
+                const SizedBox(height: 250), // Pushes content down
                 Text(
                   "Your Age Group",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.urbanist(
                     color: Colors.white,
-                    fontSize: 50,
+                    fontSize: 45,
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -190,21 +190,15 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+
+                // previous button
                 OutlinedButton(
                   onPressed: () {
-                    if (selectedAgeGroup != null) {
-                      Hive.box('userBox').put('name', userName);
-                      Hive.box('userBox').put('gender', gender);
-                      Hive.box('userBox').put('ageGroup', selectedAgeGroup);
-
-                      widget.onNext(selectedAgeGroup!); // Save current age
-                    } else {
                       widget.onBack(''); // Optional fallback
-                    }
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 53, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 45, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -218,10 +212,15 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
                     ),
                   ),
                 ),
+
+                // next button
                 ElevatedButton(
                   onPressed: () {
                     if (selectedAgeGroup != null) {
-                      widget.onNext(selectedAgeGroup!); // Save and go to Welcome
+                      Hive.box('userBox').put('name', userName);
+                      Hive.box('userBox').put('gender', gender);
+                      Hive.box('userBox').put('ageGroup', selectedAgeGroup);
+                      widget.onNext(selectedAgeGroup!); // Save current age
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -233,7 +232,7 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
-                    padding: const EdgeInsets.symmetric(horizontal: 63, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

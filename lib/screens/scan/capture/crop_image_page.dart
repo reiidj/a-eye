@@ -1,30 +1,76 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:crop_your_image/crop_your_image.dart';
+import 'package:hive/hive.dart';
+import 'dart:typed_data';
 
-class CropPage extends StatelessWidget {
+class CropPage extends StatefulWidget {
+  final String imagePath;
   final VoidCallback? onNext;
   final VoidCallback? onBack;
 
-  const CropPage({super.key, this.onNext, this.onBack});
+  const CropPage({
+    super.key,
+    required this.imagePath,
+    this.onNext,
+    this.onBack,
+  });
+
+  @override
+  State<CropPage> createState() => _CropPageState();
+}
+
+class _CropPageState extends State<CropPage> {
+  final CropController _cropController = CropController();
+  late Uint8List _imageData;
+  bool _isCropping = false;
+  bool _imageReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImage();
+  }
+
+  Future<void> _loadImage() async {
+    final file = File(widget.imagePath);
+    _imageData = await file.readAsBytes();
+    setState(() {
+      _imageReady = true;
+    });
+  }
+
+  void _onCropped(Uint8List croppedData) async {
+    final tempPath = '${Directory.systemTemp.path}/cropped_image_${DateTime.now().millisecondsSinceEpoch}.png';
+    final croppedFile = await File(tempPath).writeAsBytes(croppedData);
+
+    // Save to Hive
+    final box = Hive.box('scanResultsBox');
+    await box.put('latestImagePath', croppedFile.path);
+
+    if (mounted) {
+      Navigator.pushNamed(context, '/analyzing', arguments: {
+        'imagePath': croppedFile.path,
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final double screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
       body: Column(
         children: [
-
-          // Top bar has the Image Review text
+          // Header
           Container(
             width: double.infinity,
-            color: const Color(0xFF131A21),
-            padding: const EdgeInsets.fromLTRB(34, 40, 34, 24), // left, top, right, bottom
+            padding: const EdgeInsets.fromLTRB(34, 40, 34, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Title
                 Text(
                   "Crop Image",
                   style: GoogleFonts.urbanist(
@@ -33,39 +79,22 @@ class CropPage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 22), //DISTANCE FROM TITLE TO TEXT BOX
-
-                // Align Message Box
+                const SizedBox(height: 22),
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFFFF).withOpacity(0.15),
+                    color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(32),
                   ),
                   padding: const EdgeInsets.all(6),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-
-                      // eye icon in text box
-                      const Icon(
-                        Icons.remove_red_eye_outlined,
-                        color: Colors.white,
-                      ),
-
+                      const Icon(Icons.remove_red_eye_outlined, color: Colors.white),
                       Expanded(
-                        child: RichText(
+                        child: Text(
+                          "Drag, zoom, and position your eye within the guide.",
                           textAlign: TextAlign.center,
-                          text: TextSpan(
-                            style: GoogleFonts.urbanist(
-                              fontSize: 17,
-                              color: Colors.white,
-                            ),
-                            children: const [
-                              TextSpan(
-                                text: "Please align your eye with the guide.",
-                              ),
-                            ],
-                          ),
+                          style: GoogleFonts.urbanist(fontSize: 17, color: Colors.white),
                         ),
                       ),
                     ],
@@ -75,68 +104,115 @@ class CropPage extends StatelessWidget {
             ),
           ),
 
-          //Image preview without crosshair for now
-          SizedBox(
-            height: screenHeight * 0.4514,
-            width: double.infinity,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/Mature.png',
-                    fit: BoxFit.cover,
+          // Cropper with enhanced controls
+          if (_imageReady)
+            SizedBox(
+              height: screenHeight * 0.45,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  Crop(
+                    image: _imageData,
+                    controller: _cropController,
+                    onCropped: _onCropped,
+                    interactive: true, // Allows user interaction for image panning/zooming
+                    fixArea: true, // Fixed crop area - cannot be resized
+                    aspectRatio: 1, // Maintains square aspect ratio
+                    withCircleUi: false, // Keep rectangular crop area
+                    baseColor: Colors.black,
+                    maskColor: Colors.black.withOpacity(0.6),
+                    radius: 8, // Rounded corners for crop area
+                    initialSize: 1, // Fixed size of crop area
+                    initialArea: null, // Let the widget determine initial position
+                    // Remove corner handles by returning empty container
+                    cornerDotBuilder: (size, edgeAlignment) => const SizedBox.shrink(),
                   ),
+                  // Custom crosshair overlay - ignore pointer events
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: CrosshairPainter(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              height: screenHeight * 0.45,
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Color(0xFF5244F3),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      "Loading image...",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 80),
+          const SizedBox(height: 40),
 
-          // (B) Button Section
+          // Buttons
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               children: [
-                // RETAKE PHOTO BUTTON
                 OutlinedButton(
-                  onPressed: onBack,
+                  onPressed: widget.onBack,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 95, vertical: 18),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                   child: Text(
-                    "Retake Photo",
-                    style: GoogleFonts.urbanist(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    "Re-Upload Image",
+                    style: GoogleFonts.urbanist(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
               ],
             ),
           ),
 
-          // (C) Bottom-centered ANALYZE WITH A-EYE BUTTON
+          // Analyze Button
           Padding(
-            padding: const EdgeInsets.only(bottom: 32),
-            child: Center(
-              child: SizedBox(
-                width: 337, // TO ADJUST THE SIZE OF THE BUTTON HORIZONTALLY
-                child: ElevatedButton(
-                  onPressed: onNext, // ON PRESSED FUNCTION
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5244F3),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _imageReady && !_isCropping
+                    ? () {
+                  setState(() => _isCropping = true);
+                  _cropController.crop();
+                }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _imageReady && !_isCropping
+                      ? const Color(0xFF5244F3)
+                      : Colors.grey,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isCropping)
+                      const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    else
                       SizedBox(
                         height: 40,
                         width: 35,
@@ -146,24 +222,20 @@ class CropPage extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "Analyze with A-Eye",
-                        style: GoogleFonts.urbanist(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _isCropping ? "Processing..." : "Analyze with A-Eye",
+                      style: GoogleFonts.urbanist(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-
-          //END OF CHILDREN
-
         ],
       ),
     );
@@ -175,12 +247,50 @@ class CrosshairPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Paint solidPaint = Paint()
       ..color = Colors.white
-      ..strokeWidth = 6;
+      ..strokeWidth = 4;
 
-    const double centerX = 150;
-    const double centerY = 150;
-    const double armLength = 24;
+    final Paint dashedPaint = Paint()
+      ..color = Colors.white.withOpacity(0.6)
+      ..strokeWidth = 2;
 
+    const double gap = 15;
+    const double armLength = 20;
+    final double centerX = size.width / 2;
+    final double centerY = size.height / 2;
+    final double start = armLength + gap;
+    const double dashWidth = 15;
+    const double dashSpace = 10;
+
+    // Draw dashed lines extending from center
+    for (double i = start; i < size.width / 2 - 20; i += dashWidth + dashSpace) {
+      // Horizontal dashed lines
+      canvas.drawLine(
+        Offset(centerX + i, centerY),
+        Offset(centerX + i + dashWidth, centerY),
+        dashedPaint,
+      );
+      canvas.drawLine(
+        Offset(centerX - i, centerY),
+        Offset(centerX - i - dashWidth, centerY),
+        dashedPaint,
+      );
+    }
+
+    for (double i = start; i < size.height / 2 - 20; i += dashWidth + dashSpace) {
+      // Vertical dashed lines
+      canvas.drawLine(
+        Offset(centerX, centerY + i),
+        Offset(centerX, centerY + i + dashWidth),
+        dashedPaint,
+      );
+      canvas.drawLine(
+        Offset(centerX, centerY - i),
+        Offset(centerX, centerY - i - dashWidth),
+        dashedPaint,
+      );
+    }
+
+    // Draw solid center crosshair
     canvas.drawLine(
       Offset(centerX - armLength, centerY),
       Offset(centerX + armLength, centerY),
@@ -191,8 +301,26 @@ class CrosshairPainter extends CustomPainter {
       Offset(centerX, centerY + armLength),
       solidPaint,
     );
+
+    // Draw center circle
+    canvas.drawCircle(
+      Offset(centerX, centerY),
+      6,
+      Paint()
+        ..color = const Color(0xFF5244F3)
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawCircle(
+      Offset(centerX, centerY),
+      6,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
