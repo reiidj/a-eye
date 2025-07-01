@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:a_eye/database/app_database.dart';
+import 'package:drift/drift.dart' hide Column;
 
 class GenderSelectPage extends StatefulWidget {
   final void Function(String gender) onNext;
-  final void Function(String gender) onBack;
+  final VoidCallback onBack;
   final String? initialGender;
+  final AppDatabase database;
 
   const GenderSelectPage({
     super.key,
     required this.onNext,
     required this.onBack,
+    required this.database,
     this.initialGender,
   });
 
@@ -62,7 +66,53 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
     );
   }
 
+  Future<void> _handleNext() async {
+    if (selectedGender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select your gender"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
+    try {
+      // Update user's gender in the database
+      final users = await widget.database.getAllUsers();
+      if (users.isNotEmpty) {
+        final user = users.first;
+        await widget.database.updateUser(user.copyWith(gender: selectedGender!));
+      }
+
+      widget.onNext(selectedGender!);
+    } catch (e) {
+      // Handle error
+      debugPrint('Error updating user gender: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Error saving gender. Please try again."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleBack() async {
+    if (selectedGender != null) {
+      try {
+        // Save the current selection before going back
+        final users = await widget.database.getAllUsers();
+        if (users.isNotEmpty) {
+          final user = users.first;
+          await widget.database.updateUser(user.copyWith(gender: selectedGender!));
+        }
+      } catch (e) {
+        debugPrint('Error saving gender on back: $e');
+      }
+    }
+    widget.onBack();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +157,6 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
               ),
             ),
           ),
-
 
           // Content nung gender radio buttons
           Padding(
@@ -183,15 +232,8 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-
                 OutlinedButton(
-                  onPressed: () {
-                    if (selectedGender != null) {
-                      widget.onBack(selectedGender!); // Save + go back
-                    } else {
-                      widget.onBack(''); // If nothing selected yet, still go back
-                    }
-                  },
+                  onPressed: _handleBack,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                     padding: const EdgeInsets.symmetric(horizontal: 53, vertical: 16),
@@ -209,20 +251,8 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                   ),
                 ),
 
-
                 ElevatedButton(
-                  onPressed: () {
-                    if (selectedGender != null) {
-                      widget.onNext(selectedGender!);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please select your gender"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _handleNext,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
                     padding: const EdgeInsets.symmetric(horizontal: 63, vertical: 16),
@@ -239,12 +269,9 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                     ),
                   ),
                 ),
-
               ],
             ),
           ),
-          //end of navigation buttons
-
         ],
       ),
     );

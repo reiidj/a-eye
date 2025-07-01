@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:a_eye/database/app_database.dart'; // for User model
 
 class WelcomeScreen extends StatelessWidget {
+  final User user;
   final VoidCallback onNext;
-  final String userName;
 
   const WelcomeScreen({
     super.key,
+    required this.user,
     required this.onNext,
-    required this.userName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final userName = user.name;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -87,7 +90,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          userName, // <--- Second part: the username, make this bold
+                          user.name, // <--- Second part: the username, make this bold
                           style: GoogleFonts.urbanist(
                             fontSize: 40,
                             fontWeight: FontWeight.w700, // Make this part bold

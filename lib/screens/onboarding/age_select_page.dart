@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
+import 'package:a_eye/database/app_database.dart';
 
 class AgeSelectPage extends StatefulWidget {
   final void Function(String ageGroup) onNext;
   final void Function(String ageGroup) onBack;
   final String? initialAgeGroup;
+  final AppDatabase database;
 
   const AgeSelectPage({
     super.key,
     required this.onNext,
     required this.onBack,
+    required this.database,
     this.initialAgeGroup,
   });
 
@@ -63,7 +66,61 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
     );
   }
 
+  Future<void> _handleNext() async {
+    if (selectedAgeGroup == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select an age group"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
+    try {
+      // Update user's age group in the database
+      final users = await widget.database.getAllUsers();
+      if (users.isNotEmpty) {
+        final user = users.first;
+        await widget.database.updateUser(user.copyWith(ageGroup: selectedAgeGroup!));
+      }
+
+      // Also save to Hive for backwards compatibility
+      final args = ModalRoute.of(context)?.settings.arguments as Map?;
+      final userName = args?['name'] ?? 'Guest';
+      final gender = args?['gender'] ?? 'Unknown';
+
+      Hive.box('userBox').put('name', userName);
+      Hive.box('userBox').put('gender', gender);
+      Hive.box('userBox').put('ageGroup', selectedAgeGroup);
+
+      widget.onNext(selectedAgeGroup!);
+    } catch (e) {
+      debugPrint('Error updating user age group: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Error saving age group. Please try again."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleBack() async {
+    if (selectedAgeGroup != null) {
+      try {
+        // Save the current selection before going back
+        final users = await widget.database.getAllUsers();
+        if (users.isNotEmpty) {
+          final user = users.first;
+          await widget.database.updateUser(user.copyWith(ageGroup: selectedAgeGroup!));
+        }
+      } catch (e) {
+        debugPrint('Error saving age group on back: $e');
+      }
+    }
+    widget.onBack('');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +169,6 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
               ),
             ),
           ),
-
 
           // Content nung age radio buttons
           Padding(
@@ -190,12 +246,9 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-
                 // previous button
                 OutlinedButton(
-                  onPressed: () {
-                      widget.onBack(''); // Optional fallback
-                  },
+                  onPressed: _handleBack,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                     padding: const EdgeInsets.symmetric(horizontal: 45, vertical: 16),
@@ -215,21 +268,7 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
 
                 // next button
                 ElevatedButton(
-                  onPressed: () {
-                    if (selectedAgeGroup != null) {
-                      Hive.box('userBox').put('name', userName);
-                      Hive.box('userBox').put('gender', gender);
-                      Hive.box('userBox').put('ageGroup', selectedAgeGroup);
-                      widget.onNext(selectedAgeGroup!); // Save current age
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please select an age group"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _handleNext,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
                     padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
@@ -250,7 +289,6 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
             ),
           ),
           //end of navigation buttons
-
         ],
       ),
     );
