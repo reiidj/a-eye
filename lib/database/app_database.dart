@@ -78,6 +78,11 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<ScanResult>> getScansForUser(int userId) =>
       (select(scanResults)..where((s) => s.userId.equals(userId))).get();
+
+  // Return all scans regardless of user
+  Future<List<ScanResult>> getAllScanResults() => select(scanResults).get();
+
+
 }
 
 // Lazy database init

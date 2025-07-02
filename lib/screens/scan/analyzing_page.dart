@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:hive/hive.dart';
 
 class AnalyzingPage extends StatefulWidget {
   final VoidCallback? onComplete;
+  final Map<String, dynamic>? arguments; // Add arguments parameter
 
-  const AnalyzingPage({super.key, this.onComplete});
+  const AnalyzingPage({
+    super.key,
+    this.onComplete,
+    this.arguments,
+  });
 
   @override
   State<AnalyzingPage> createState() => _AnalyzingPageState();
@@ -20,26 +23,11 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
   Timer? _navigateTimer;
   bool _completed = false;
 
-  void saveResultToHive(String imagePath, String resultTitle) async {
-    final box = Hive.box('scanResultsBox');
-
-    final List existingResults = box.get('results', defaultValue: []).cast<Map>();
-
-    final newResult = {
-      'date': DateFormat('MMMM d, y, h:mm a').format(DateTime.now()),
-      'title': resultTitle, // e.g. "Mature Cataract"
-      'imagePath': imagePath,
-    };
-
-    existingResults.insert(0, newResult); // insert at the top (most recent)
-    await box.put('results', existingResults);
-  }
-
   @override
   void initState() {
     super.initState();
 
-    // Animate dots every 500ms
+    // Animate dots
     _dotTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (!mounted) return;
       setState(() {
@@ -48,20 +36,28 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       });
     });
 
-    // Go to next page after 3 seconds
+    // Navigate after 3s
     _navigateTimer = Timer(const Duration(seconds: 3), () {
       if (mounted && !_completed) {
         _completed = true;
-
-        // Get image path from arguments
-        final args = ModalRoute.of(context)?.settings.arguments;
-        if (args is String) {
-          saveResultToHive(args, "Mature Cataract"); // or "Immature Cataract"
-        }
-
-        widget.onComplete?.call();
+        _handleNavigation();
       }
     });
+  }
+
+  void _handleNavigation() {
+    if (widget.onComplete != null) {
+      widget.onComplete!();
+    } else {
+      // Fallback navigation if no onComplete callback
+      _navigateToComplete();
+    }
+  }
+
+  void _navigateToComplete() {
+    // Use the arguments passed to this page
+    final args = widget.arguments ?? {};
+    Navigator.of(context).pushReplacementNamed('/complete', arguments: args);
   }
 
   @override
@@ -76,14 +72,10 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF161616),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-
-          const SizedBox(height: 150), // spacing from top to image
-
-          // Image overlayed with Analyzing... text na animated amazing
+          const SizedBox(height: 150),
           SizedBox(
-            height: 360, // adjust height if needed
+            height: 360,
             width: double.infinity,
             child: Stack(
               alignment: Alignment.center,
@@ -107,12 +99,9 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
               ],
             ),
           ),
-
-          //Message box
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 45.0),
+            padding: const EdgeInsets.symmetric(horizontal: 45),
             child: Container(
-              width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.15),
@@ -129,10 +118,7 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
               ),
             ),
           ),
-
-          const SizedBox(height: 210), //  gap
-
-          //Supporting note sa baba
+          const SizedBox(height: 210),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(

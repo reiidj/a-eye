@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive/hive.dart';
 import 'package:a_eye/database/app_database.dart';
 
 class AgeSelectPage extends StatefulWidget {
@@ -82,17 +81,8 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
       final users = await widget.database.getAllUsers();
       if (users.isNotEmpty) {
         final user = users.first;
-        await widget.database.updateUser(user.copyWith(ageGroup: selectedAgeGroup!));
+        await widget.database.updateUserFields(user.id, ageGroup: selectedAgeGroup!);
       }
-
-      // Also save to Hive for backwards compatibility
-      final args = ModalRoute.of(context)?.settings.arguments as Map?;
-      final userName = args?['name'] ?? 'Guest';
-      final gender = args?['gender'] ?? 'Unknown';
-
-      Hive.box('userBox').put('name', userName);
-      Hive.box('userBox').put('gender', gender);
-      Hive.box('userBox').put('ageGroup', selectedAgeGroup);
 
       widget.onNext(selectedAgeGroup!);
     } catch (e) {
@@ -109,18 +99,18 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
   Future<void> _handleBack() async {
     if (selectedAgeGroup != null) {
       try {
-        // Save the current selection before going back
         final users = await widget.database.getAllUsers();
         if (users.isNotEmpty) {
           final user = users.first;
-          await widget.database.updateUser(user.copyWith(ageGroup: selectedAgeGroup!));
+          await widget.database.updateUserFields(user.id, ageGroup: selectedAgeGroup!);
         }
       } catch (e) {
         debugPrint('Error saving age group on back: $e');
       }
     }
-    widget.onBack('');
+    widget.onBack(selectedAgeGroup ?? '');
   }
+
 
   @override
   Widget build(BuildContext context) {

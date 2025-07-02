@@ -181,8 +181,35 @@ class _NameInputPageState extends State<NameInputPage> {
               ),
             ),
           ),
+
           ElevatedButton(
-            onPressed: _handleNext,
+            onPressed: () async {
+              final name = _controller.text.trim();
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Please enter your name"),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+                return;
+              }
+
+              // Check for existing user before inserting
+              final existingUsers = await widget.database.getAllUsers();
+              if (existingUsers.isEmpty) {
+                await widget.database.insertUser(UsersCompanion(
+                  name: Value(name),
+                  gender: const Value('Not set'),
+                  ageGroup: const Value('Not set'),
+                ));
+              } else {
+                final user = existingUsers.first;
+                await widget.database.updateUserFields(user.id, name: name);
+              }
+
+              widget.onNext(name);
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF5244F3),
               padding: const EdgeInsets.symmetric(horizontal: 63, vertical: 16),

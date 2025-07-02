@@ -78,16 +78,14 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
     }
 
     try {
-      // Update user's gender in the database
       final users = await widget.database.getAllUsers();
       if (users.isNotEmpty) {
         final user = users.first;
-        await widget.database.updateUser(user.copyWith(gender: selectedGender!));
+        await widget.database.updateUserFields(user.id, gender: selectedGender!);
       }
 
       widget.onNext(selectedGender!);
     } catch (e) {
-      // Handle error
       debugPrint('Error updating user gender: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -105,7 +103,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
         final users = await widget.database.getAllUsers();
         if (users.isNotEmpty) {
           final user = users.first;
-          await widget.database.updateUser(user.copyWith(gender: selectedGender!));
+          await widget.database.updateUserFields(user.id, gender: selectedGender!);
         }
       } catch (e) {
         debugPrint('Error saving gender on back: $e');

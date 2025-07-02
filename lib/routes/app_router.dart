@@ -54,7 +54,7 @@ class AppRouter {
             database: database,
             onNext: (name) => AppRouter.navigateToGender(name, database),
             onBack: () => AppRouter.navigateTo('/'),
-            initialName: currentUser?.name, // Pass existing name if available
+            initialName: currentUser?.name,
           ),
         );
 
@@ -63,10 +63,10 @@ class AppRouter {
         final userName = settings.arguments as String;
         return _buildRoute(
           GenderSelectPage(
-            database: database, // Add database parameter
+            database: database,
             onNext: (gender) => AppRouter.navigateToAge(userName, gender, database),
             onBack: () => AppRouter.navigateBack(),
-            initialGender: currentUser?.gender, // Pass existing gender if available
+            initialGender: currentUser?.gender,
           ),
         );
 
@@ -77,7 +77,7 @@ class AppRouter {
         final gender = args['gender'] as String;
         return _buildRoute(
           AgeSelectPage(
-            database: database, // Add database parameter
+            database: database,
             onNext: (ageGroup) => AppRouter.completeOnboarding(
               userName,
               gender,
@@ -85,7 +85,7 @@ class AppRouter {
               database,
             ),
             onBack: (ageGroup) => AppRouter.navigateBack(),
-            initialAgeGroup: currentUser?.ageGroup, // Pass existing age group if available
+            initialAgeGroup: currentUser?.ageGroup,
           ),
         );
 
@@ -106,6 +106,7 @@ class AppRouter {
         final userName = args?['name'] ?? currentUser?.name ?? 'Guest';
         return _buildRoute(
           WelcomeScreenWithResult(
+            database: database,
             userName: userName,
             onNext: () => AppRouter.navigateTo('/scanMode'),
           ),
@@ -153,7 +154,12 @@ class AppRouter {
         return _buildRoute(
           CropPage(
             imagePath: args['imagePath'],
-            onNext: () => AppRouter.navigateTo('/analyzing'),
+            onNext: () => AppRouter.navigateTo('/analyzing', {
+              'database': database,
+              'userId': currentUser?.id,
+              'name': currentUser?.name ?? 'Guest',
+              'imagePath': args['imagePath'],
+            }),
             onBack: () => AppRouter.navigateBackToCamera(),
           ),
         );
@@ -169,36 +175,86 @@ class AppRouter {
 
     // Analysis Flow
       case '/analyzing':
+        final args = settings.arguments as Map<String, dynamic>?;
+        final analyzeDatabase = args?['database'] ?? database;
+        final userId = args?['userId'] ?? currentUser?.id;
+        final userName = args?['name'] ?? currentUser?.name ?? 'Guest';
+        final imagePath = args?['imagePath'];
+
         return _buildRoute(
           AnalyzingPage(
-            onComplete: () => AppRouter.navigateTo('/complete'),
+            onComplete: () {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (AppRouter.navigatorKey.currentState?.mounted ?? false) {
+                  AppRouter.navigateTo('/complete', {
+                    'database': analyzeDatabase,
+                    'userId': userId,
+                    'name': userName,
+                    'imagePath': imagePath,
+                  });
+                }
+              });
+            },
           ),
         );
 
       case '/complete':
         final args = settings.arguments as Map<String, dynamic>?;
         final userName = args?['name'] ?? currentUser?.name ?? 'Guest';
+        final completeDatabase = args?['database'] ?? database;
+        final userId = args?['userId'] ?? currentUser?.id;
+        final imagePath = args?['imagePath'];
+
         return _buildRoute(
           AnalyzedPage(
-            onComplete: () => AppRouter.navigateToResult(userName),
+            onComplete: () => AppRouter.navigateToResult(userName, {
+              'database': completeDatabase,
+              'userId': userId,
+              'imagePath': imagePath,
+            }),
+            database: completeDatabase,
+            userId: userId,
           ),
         );
 
       case '/mature':
         final args = settings.arguments as Map<String, dynamic>?;
         final userName = args?['name'] ?? 'Guest';
+        final matureDatabase = args?['database'] ?? database;
+        final userId = args?['userId'];
+        final imagePath = args?['imagePath'];
+
         return _buildRoute(
           MaturePage(
-            onNext: () => AppRouter.navigateToWelcomeWithResult(userName),
+            onNext: () async {
+              // Save scan result before navigating
+              await _saveScanResult(matureDatabase, userId, imagePath, 'mature');
+              AppRouter.navigateToWelcomeWithResult(userName);
+            },
           ),
         );
 
       case '/immature':
         final args = settings.arguments as Map<String, dynamic>?;
         final userName = args?['name'] ?? 'Guest';
-        return _buildRoute(
-          ImmaturePage(
-            onNext: () => AppRouter.navigateToWelcomeWithResult(userName),
+        final immatureDatabase = args?['database'] ?? database;
+        final userId = args?['userId'];
+        final imagePath = args?['imagePath'];
+
+        return MaterialPageRoute(
+          builder: (context) => ImmaturePage(
+            onNext: () async {
+              // Save scan result before navigating
+              await _saveScanResult(immatureDatabase, userId, imagePath, 'immature');
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/welcomeWithResult',
+                    (_) => false,
+                arguments: {'name': userName},
+              );
+            },
+            database: immatureDatabase,
+            userId: userId,
           ),
         );
 
@@ -206,7 +262,8 @@ class AppRouter {
       case '/uploadSelect':
         return _buildRoute(
           SelectPage(
-            onNext: () => AppRouter.navigateRandomUpload(),
+            database: database,
+            onNext: (imagePath) => AppRouter.navigateRandomUpload(imagePath),
           ),
         );
 
@@ -214,15 +271,22 @@ class AppRouter {
         final args = settings.arguments as Map<String, dynamic>;
         return _buildRoute(
           UploadCropPage(
+            database: database,
             imagePath: args['imagePath'],
-            onNext: args['onNext'],
-            onBack: args['onBack'],
+            onNext: () => AppRouter.navigateTo('/analyzing', {
+              'database': database,
+              'userId': currentUser?.id,
+              'name': currentUser?.name ?? 'Guest',
+              'imagePath': args['imagePath'],
+            }),
+            onBack: args['onBack'] ?? () => AppRouter.navigateBack(),
           ),
         );
 
       case '/uploadInvalid':
         return _buildRoute(
-          uploadInvalidPage(
+          UploadInvalidPage(
+            database: database,
             onBack: () => AppRouter.navigateBack(),
           ),
         );
@@ -304,37 +368,67 @@ class AppRouter {
     navigatorKey.currentState?.popUntil(ModalRoute.withName('/camera'));
   }
 
-  static void navigateToResult(String userName) {
+  static void navigateToResult(String userName, [Map<String, dynamic>? additionalArgs]) {
     final random = DateTime.now().millisecondsSinceEpoch % 2;
+    final args = {
+      'name': userName,
+      ...?additionalArgs,
+    };
+
     if (random == 0) {
-      navigatorKey.currentState?.pushNamed('/mature', arguments: {'name': userName});
+      navigatorKey.currentState?.pushNamed('/mature', arguments: args);
     } else {
-      navigatorKey.currentState?.pushNamed('/immature', arguments: {'name': userName});
+      navigatorKey.currentState?.pushNamed('/immature', arguments: args);
     }
   }
 
   static void navigateToWelcomeWithResult(String userName) {
-    navigatorKey.currentState?.pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => WelcomeScreenWithResult(
-          userName: userName,
-          onNext: () => navigatorKey.currentState?.pushNamed('/scanMode'),
-        ),
-      ),
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/welcomeWithResult',
           (route) => false,
+      arguments: {
+        'name': userName,
+      },
     );
   }
 
-  static void navigateRandomUpload() {
+  static void navigateRandomUpload(String imagePath) {
     final random = DateTime.now().millisecondsSinceEpoch % 2;
+
     if (random == 0) {
-      navigatorKey.currentState?.pushNamed('/uploadInvalid');
+      navigatorKey.currentState?.pushNamed('/uploadInvalid', arguments: {
+        'imagePath': imagePath,
+      });
     } else {
       navigatorKey.currentState?.pushNamed('/uploadCrop', arguments: {
-        'imagePath': '', // You might need to pass actual image path
+        'imagePath': imagePath,
         'onNext': () => AppRouter.navigateTo('/analyzing'),
         'onBack': () => AppRouter.navigateBack(),
       });
+    }
+  }
+
+  // Method to save scan results to database
+  static Future<void> _saveScanResult(
+      AppDatabase? database,
+      int? userId,
+      String? imagePath,
+      String result
+      ) async {
+    if (database != null && userId != null && imagePath != null) {
+      try {
+        await database.insertScan(ScanResultsCompanion(
+          userId: Value(userId),
+          imagePath: Value(imagePath),
+          result: Value(result),
+          timestamp: Value(DateTime.now()),
+        ));
+        debugPrint('Scan result saved: $result for user $userId');
+      } catch (e) {
+        debugPrint('Error saving scan result: $e');
+      }
+    } else {
+      debugPrint('Cannot save scan result: missing database ($database), userId ($userId), or imagePath ($imagePath)');
     }
   }
 

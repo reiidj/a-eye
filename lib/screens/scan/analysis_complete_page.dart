@@ -1,61 +1,59 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
+import 'package:a_eye/database/app_database.dart';
 
 class AnalyzedPage extends StatefulWidget {
   final VoidCallback? onComplete;
+  final AppDatabase database;
+  final int userId;
 
-  const AnalyzedPage({super.key, this.onComplete});
+  const AnalyzedPage({
+    super.key,
+    required this.database,
+    required this.userId,
+    this.onComplete,
+  });
 
   @override
   State<AnalyzedPage> createState() => _AnalyzedPageState();
 }
 
 class _AnalyzedPageState extends State<AnalyzedPage> {
+
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 2), () async {
-      final userBox = Hive.box('userBox');
-      final userName = userBox.get('name') ?? 'Guest';
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(seconds: 2));
 
-      final scanBox = Hive.box('scanResultsBox');
-      final String? imagePath = scanBox.get('latestImagePath');
+      if (!mounted) return;
+
+      // Fetch user name from the database
+      final user = await widget.database.getUserById(widget.userId);
+      final String userName = user?.name ?? 'Guest';
 
       final bool isMature = DateTime.now().millisecondsSinceEpoch % 2 == 0;
-      final resultTitle = isMature ? 'Mature Cataract' : 'Immature Cataract';
 
-      final List existingResults = scanBox.get('results', defaultValue: []).cast<Map>();
-
-      final newResult = {
-        'date': DateFormat('MMMM d, y, h:mm a').format(
-          DateTime.now().toUtc().add(const Duration(hours: 8)),
-        ),
-        'title': resultTitle,
-        'imagePath': imagePath,
-      };
-
-      existingResults.insert(0, newResult);
-      await scanBox.put('results', existingResults);
-
-      // Navigate to correct result page
       Navigator.pushNamed(
         context,
         isMature ? '/mature' : '/immature',
-        arguments: {'name': userName},
+        arguments: {
+          'userId': widget.userId,
+          'database': widget.database,
+          'name': userName,
+        },
       );
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF161616),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(height: 150),
           SizedBox(

@@ -1,18 +1,21 @@
 import 'dart:io';
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:crop_your_image/crop_your_image.dart';
-import 'package:hive/hive.dart';
 import 'dart:typed_data';
+import 'package:a_eye/database/app_database.dart';
 
 class UploadCropPage extends StatefulWidget {
   final String imagePath;
+  final AppDatabase database;
   final VoidCallback? onNext;
   final VoidCallback? onBack;
 
   const UploadCropPage({
     super.key,
     required this.imagePath,
+    required this.database,
     this.onNext,
     this.onBack,
   });
@@ -45,9 +48,17 @@ class _UploadCropPageState extends State<UploadCropPage> {
     final tempPath = '${Directory.systemTemp.path}/cropped_image_${DateTime.now().millisecondsSinceEpoch}.png';
     final croppedFile = await File(tempPath).writeAsBytes(croppedData);
 
-    // Save to Hive
-    final box = Hive.box('scanResultsBox');
-    await box.put('latestImagePath', croppedFile.path);
+    final users = await widget.database.getAllUsers();
+
+    if (users.isNotEmpty) {
+      final userId = users.first.id;
+      await widget.database.insertScan(ScanResultsCompanion(
+        userId: Value(userId),
+        imagePath: Value(croppedFile.path),
+        result: const Value("Pending"),
+        timestamp: Value(DateTime.now()),
+      ));
+    }
 
     if (mounted) {
       Navigator.pushNamed(context, '/analyzing', arguments: {
@@ -55,6 +66,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

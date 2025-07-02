@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'name_input_page.dart'; // next page which is name input page
 
 class LandingPage extends StatelessWidget {
   final VoidCallback onNext;

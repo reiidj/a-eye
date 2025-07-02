@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:a_eye/database/app_database.dart';
 
-class uploadInvalidPage extends StatelessWidget {
+class UploadInvalidPage extends StatelessWidget {
   final VoidCallback? onBack;
+  final AppDatabase database;
 
-  const uploadInvalidPage({super.key, this.onBack});
+  const UploadInvalidPage({
+    super.key,
+    required this.database,
+    this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,13 +20,12 @@ class uploadInvalidPage extends StatelessWidget {
       backgroundColor: const Color(0xFF131A21),
       body: Column(
         children: [
-
-          // Top bar has the Image Review text
+          // Top bar
           Container(
             height: screenHeight * 0.1149,
             width: double.infinity,
-            color: const Color(0xFF131A21),
             alignment: Alignment.center,
+            color: const Color(0xFF131A21),
             child: Text(
               "Image Review",
               style: GoogleFonts.urbanist(
@@ -31,27 +36,21 @@ class uploadInvalidPage extends StatelessWidget {
             ),
           ),
 
-          // Image taking up 50% of the screen
+          // Image preview
           SizedBox(
             height: screenHeight * 0.5095,
             width: double.infinity,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/Immature.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ],
+            child: Image.asset(
+              'assets/images/Immature.png',
+              fit: BoxFit.cover,
             ),
           ),
 
           const Spacer(),
 
-          // WARNING SIGN
+          // Warning box
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 37.0, vertical: 12), // increase horizontal to make the box smalelr
+            padding: const EdgeInsets.symmetric(horizontal: 37.0, vertical: 12),
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFA20000).withOpacity(0.49),
@@ -61,15 +60,8 @@ class uploadInvalidPage extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-
-                  // X Icon
-                  const Icon(
-                    Icons.cancel,
-                    color: Colors.red,
-                  ),
-                  const SizedBox(width: 12), // distance between x icon and text
-
-                  // Text Message
+                  const Icon(Icons.cancel, color: Colors.red),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: RichText(
                       text: TextSpan(
@@ -93,11 +85,12 @@ class uploadInvalidPage extends StatelessWidget {
               ),
             ),
           ),
+
           const SizedBox(height: 16),
 
-          // Retake photo button
+          // Retake button
           Padding(
-            padding: const EdgeInsets.only(bottom: 96), // space from the bottom part
+            padding: const EdgeInsets.only(bottom: 96),
             child: OutlinedButton(
               onPressed: onBack,
               style: OutlinedButton.styleFrom(
@@ -115,9 +108,6 @@ class uploadInvalidPage extends StatelessWidget {
               ),
             ),
           ),
-
-          // END OF CHILDREN
-
         ],
       ),
     );

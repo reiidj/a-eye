@@ -1,15 +1,21 @@
 import 'dart:io';
 import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:a_eye/database/app_database.dart';
 
 class SelectPage extends StatefulWidget {
-  final VoidCallback onNext;
+  final AppDatabase database;
+  final void Function(String imagePath) onNext;
 
-  const SelectPage({super.key, required this.onNext});
+  const SelectPage({
+    super.key,
+    required this.onNext,
+    required this.database,
+  });
 
   @override
   State<SelectPage> createState() => _SelectPageState();
@@ -27,27 +33,43 @@ class _SelectPageState extends State<SelectPage> {
 
       // Save a copy to app directory
       final appDir = await getApplicationDocumentsDirectory();
-      final savedImage = await imageFile.copy('${appDir.path}/${DateTime.now().millisecondsSinceEpoch}.png');
-
-      // Save path to Hive
-      final scanBox = Hive.box('scanResultsBox');
-      await scanBox.put('latestImagePath', savedImage.path);
+      final savedImage = await imageFile.copy(
+        '${appDir.path}/${DateTime.now().millisecondsSinceEpoch}.png',
+      );
 
       setState(() {
         _selectedImage = savedImage;
       });
 
-      // Navigate and pass image path
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => UploadCropPage(
-            imagePath: savedImage.path,
-            onNext: () => Navigator.pushNamed(context, '/analyzing'),
-            onBack: () => Navigator.pop(context),
+      try {
+        // Get current user
+        final users = await widget.database.getAllUsers();
+        if (users.isEmpty) {
+          throw Exception("No user found");
+        }
+        final user = users.first;
+
+        // Insert scan result with placeholder result
+        await widget.database.insertScan(
+          ScanResultsCompanion(
+            userId: Value(user.id),
+            imagePath: Value(savedImage.path),
+            result: const Value("Pending"),
+            timestamp: Value(DateTime.now()),
           ),
-        ),
-      );
+        );
+
+        // Use onNext callback and pass the imagePath
+        widget.onNext(savedImage.path);
+      } catch (e) {
+        debugPrint("Failed to save scan: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Failed to save scan. Please try again."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
