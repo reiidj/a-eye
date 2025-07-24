@@ -8,7 +8,7 @@ A Eye is a mobile application built with Flutter designed to assist in **catarac
 
 - Image input via camera or gallery  
 - ML model integration for cataract classification  
-- Offline architecture
+- Offline architecture  
 - Confidence score and prediction results display  
 - User-friendly and clean Flutter UI  
 
@@ -24,12 +24,17 @@ Ensure you have the following installed:
 - Android Studio or VS Code
 - Android/iOS Emulator or physical device
 
-##App Preview
+---
 
-<img width="390" height="845" alt="image" src="https://github.com/user-attachments/assets/afb80255-dd9e-48ed-9776-8a4500a45780" />
+## 📱 App Preview
 
+<p align="center">
+  <img width="390" height="845" src="https://github.com/user-attachments/assets/afb80255-dd9e-48ed-9776-8a4500a45780" alt="A Eye App Screenshot">
+</p>
 
-### Installation
+---
+
+### 🔧 Installation
 
 Clone the repo:
 
