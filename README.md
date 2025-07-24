@@ -24,8 +24,8 @@ Ensure you have the following installed:
 - Android Studio or VS Code
 - Android/iOS Emulator or physical device
 
-  
 ##App Preview
+
 <img width="390" height="845" alt="image" src="https://github.com/user-attachments/assets/afb80255-dd9e-48ed-9776-8a4500a45780" />
 
 
