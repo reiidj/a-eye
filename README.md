@@ -1,16 +1,33 @@
-# a_eye
+# A Eye
 
-Cataract classification tool.
+A Eye is a mobile application built with Flutter designed to assist in **cataract classification** using machine learning. It allows users to capture or upload eye images and classifies them into relevant categories to support early diagnosis and treatment prioritization.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🧠 Features
 
-A few resources to get you started if this is your first Flutter project:
+- 📸 Image input via camera or gallery  
+- 🧪 ML model integration for cataract classification  
+- 💾 Offline-first architecture (if applicable)  
+- 📊 Confidence score and prediction results display  
+- 🧍‍♂️ User-friendly and clean Flutter UI  
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- Flutter SDK: [Install Guide](https://docs.flutter.dev/get-started/install)
+- Android Studio or VS Code
+- Android/iOS Emulator or physical device
+
+### Installation
+
+Clone the repo:
+
+```bash
+git clone https://github.com/your-username/a_eye.git
+cd a_eye
