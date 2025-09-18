@@ -3,11 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 class WelcomeScreen extends StatelessWidget {
   final VoidCallback onNext;
+  final VoidCallback onProfile;
   final String userName;
 
   const WelcomeScreen({
     super.key,
     required this.onNext,
+    required this.onProfile,
     required this.userName,
   });
 
@@ -35,14 +37,17 @@ class WelcomeScreen extends StatelessWidget {
                   Positioned(
                     top: 20,
                     left: 30,
-                    child: Image.asset(
-                      'assets/images/Profile btn.png',
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.menu, color: Colors.white, size: 28);
-                      },
+                    child: GestureDetector(
+                      onTap: onProfile,
+                      child: Image.asset(
+                        'assets/images/Profile btn.png',
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.menu, color: Colors.white, size: 28);
+                        },
+                      ),
                     ),
                   ),
 

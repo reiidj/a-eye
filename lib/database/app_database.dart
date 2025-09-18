@@ -35,10 +35,10 @@ class AppDatabase extends _$AppDatabase {
   // --- User Methods ---
   Future<int> insertUser(UsersCompanion user) => into(users).insert(user);
 
-  Future<User?> getLatestUser() {
+  Future<User?> getLatestUser() async {
     return (select(users)
-      ..orderBy(
-          [(u) => OrderingTerm(expression: u.createdAt, mode: OrderingMode.desc)]))
+      ..orderBy([(u) => OrderingTerm(expression: u.createdAt, mode: OrderingMode.desc)])
+      ..limit(1))
         .getSingleOrNull();
   }
 

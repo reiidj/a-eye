@@ -13,6 +13,7 @@ import 'package:a_eye/screens/scan_setup/scan_mode_page.dart';
 import 'package:a_eye/screens/scan_setup/check_surroundings_1.dart';
 import 'package:a_eye/screens/scan_setup/check_surroundings_2.dart';
 import 'package:a_eye/screens/scan_setup/disclaimer_page.dart';
+import 'package:a_eye/screens/scan_setup/profile_page.dart';
 
 // Scan
 import 'package:a_eye/screens/scan/capture/camera_page.dart';
@@ -95,6 +96,7 @@ final Map<String, WidgetBuilder> appRoutes = {
     return WelcomeScreen(
       userName: userName,
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
+      onProfile: () => Navigator.pushNamed(context, '/ProfilePage'),
     );
   },
 
@@ -107,6 +109,14 @@ final Map<String, WidgetBuilder> appRoutes = {
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
     );
   },
+
+  //Profile page
+  '/ProfilePage': (context) {
+    return ProfilePage(
+      onNext: () => Navigator.pushNamed(context, '/scanMode'),
+    );
+  },
+
 
   // Scan Setup Flow
   '/scanMode': (context) => ScanModePage(

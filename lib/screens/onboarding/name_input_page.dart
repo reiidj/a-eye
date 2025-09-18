@@ -145,7 +145,7 @@ class _NameInputPageState extends State<NameInputPage> {
                   controller: _controller,
                   focusNode: _focusNode,
                   autofocus: true,
-                  maxLength: 20,
+                  maxLength: 13,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Enter your name',
