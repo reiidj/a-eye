@@ -50,6 +50,15 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+    'email',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -62,7 +71,14 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name, gender, ageGroup, createdAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    gender,
+    ageGroup,
+    email,
+    createdAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -102,6 +118,12 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     } else if (isInserting) {
       context.missing(_ageGroupMeta);
     }
+    if (data.containsKey('email')) {
+      context.handle(
+        _emailMeta,
+        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -135,6 +157,10 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.string,
         data['${effectivePrefix}age_group'],
       )!,
+      email: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}email'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -153,12 +179,14 @@ class User extends DataClass implements Insertable<User> {
   final String name;
   final String gender;
   final String ageGroup;
+  final String? email;
   final DateTime createdAt;
   const User({
     required this.id,
     required this.name,
     required this.gender,
     required this.ageGroup,
+    this.email,
     required this.createdAt,
   });
   @override
@@ -168,6 +196,9 @@ class User extends DataClass implements Insertable<User> {
     map['name'] = Variable<String>(name);
     map['gender'] = Variable<String>(gender);
     map['age_group'] = Variable<String>(ageGroup);
+    if (!nullToAbsent || email != null) {
+      map['email'] = Variable<String>(email);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -178,6 +209,9 @@ class User extends DataClass implements Insertable<User> {
       name: Value(name),
       gender: Value(gender),
       ageGroup: Value(ageGroup),
+      email: email == null && nullToAbsent
+          ? const Value.absent()
+          : Value(email),
       createdAt: Value(createdAt),
     );
   }
@@ -192,6 +226,7 @@ class User extends DataClass implements Insertable<User> {
       name: serializer.fromJson<String>(json['name']),
       gender: serializer.fromJson<String>(json['gender']),
       ageGroup: serializer.fromJson<String>(json['ageGroup']),
+      email: serializer.fromJson<String?>(json['email']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -203,6 +238,7 @@ class User extends DataClass implements Insertable<User> {
       'name': serializer.toJson<String>(name),
       'gender': serializer.toJson<String>(gender),
       'ageGroup': serializer.toJson<String>(ageGroup),
+      'email': serializer.toJson<String?>(email),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -212,12 +248,14 @@ class User extends DataClass implements Insertable<User> {
     String? name,
     String? gender,
     String? ageGroup,
+    Value<String?> email = const Value.absent(),
     DateTime? createdAt,
   }) => User(
     id: id ?? this.id,
     name: name ?? this.name,
     gender: gender ?? this.gender,
     ageGroup: ageGroup ?? this.ageGroup,
+    email: email.present ? email.value : this.email,
     createdAt: createdAt ?? this.createdAt,
   );
   User copyWithCompanion(UsersCompanion data) {
@@ -226,6 +264,7 @@ class User extends DataClass implements Insertable<User> {
       name: data.name.present ? data.name.value : this.name,
       gender: data.gender.present ? data.gender.value : this.gender,
       ageGroup: data.ageGroup.present ? data.ageGroup.value : this.ageGroup,
+      email: data.email.present ? data.email.value : this.email,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -237,13 +276,14 @@ class User extends DataClass implements Insertable<User> {
           ..write('name: $name, ')
           ..write('gender: $gender, ')
           ..write('ageGroup: $ageGroup, ')
+          ..write('email: $email, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, gender, ageGroup, createdAt);
+  int get hashCode => Object.hash(id, name, gender, ageGroup, email, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -252,6 +292,7 @@ class User extends DataClass implements Insertable<User> {
           other.name == this.name &&
           other.gender == this.gender &&
           other.ageGroup == this.ageGroup &&
+          other.email == this.email &&
           other.createdAt == this.createdAt);
 }
 
@@ -260,12 +301,14 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> name;
   final Value<String> gender;
   final Value<String> ageGroup;
+  final Value<String?> email;
   final Value<DateTime> createdAt;
   const UsersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.gender = const Value.absent(),
     this.ageGroup = const Value.absent(),
+    this.email = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   UsersCompanion.insert({
@@ -273,6 +316,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     required String name,
     required String gender,
     required String ageGroup,
+    this.email = const Value.absent(),
     required DateTime createdAt,
   }) : name = Value(name),
        gender = Value(gender),
@@ -283,6 +327,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? name,
     Expression<String>? gender,
     Expression<String>? ageGroup,
+    Expression<String>? email,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -290,6 +335,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (name != null) 'name': name,
       if (gender != null) 'gender': gender,
       if (ageGroup != null) 'age_group': ageGroup,
+      if (email != null) 'email': email,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -299,6 +345,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Value<String>? name,
     Value<String>? gender,
     Value<String>? ageGroup,
+    Value<String?>? email,
     Value<DateTime>? createdAt,
   }) {
     return UsersCompanion(
@@ -306,6 +353,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       name: name ?? this.name,
       gender: gender ?? this.gender,
       ageGroup: ageGroup ?? this.ageGroup,
+      email: email ?? this.email,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -325,6 +373,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (ageGroup.present) {
       map['age_group'] = Variable<String>(ageGroup.value);
     }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -338,6 +389,7 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('name: $name, ')
           ..write('gender: $gender, ')
           ..write('ageGroup: $ageGroup, ')
+          ..write('email: $email, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -713,6 +765,7 @@ typedef $$UsersTableCreateCompanionBuilder =
       required String name,
       required String gender,
       required String ageGroup,
+      Value<String?> email,
       required DateTime createdAt,
     });
 typedef $$UsersTableUpdateCompanionBuilder =
@@ -721,6 +774,7 @@ typedef $$UsersTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> gender,
       Value<String> ageGroup,
+      Value<String?> email,
       Value<DateTime> createdAt,
     });
 
@@ -773,6 +827,11 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<String> get ageGroup => $composableBuilder(
     column: $table.ageGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get email => $composableBuilder(
+    column: $table.email,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -836,6 +895,11 @@ class $$UsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -862,6 +926,9 @@ class $$UsersTableAnnotationComposer
 
   GeneratedColumn<String> get ageGroup =>
       $composableBuilder(column: $table.ageGroup, builder: (column) => column);
+
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -924,12 +991,14 @@ class $$UsersTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> gender = const Value.absent(),
                 Value<String> ageGroup = const Value.absent(),
+                Value<String?> email = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => UsersCompanion(
                 id: id,
                 name: name,
                 gender: gender,
                 ageGroup: ageGroup,
+                email: email,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -938,12 +1007,14 @@ class $$UsersTableTableManager
                 required String name,
                 required String gender,
                 required String ageGroup,
+                Value<String?> email = const Value.absent(),
                 required DateTime createdAt,
               }) => UsersCompanion.insert(
                 id: id,
                 name: name,
                 gender: gender,
                 ageGroup: ageGroup,
+                email: email,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0

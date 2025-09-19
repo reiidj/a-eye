@@ -3,7 +3,6 @@ import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-// REMOVED: import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 
 class SelectPage extends StatefulWidget {
@@ -45,7 +44,11 @@ class _SelectPageState extends State<SelectPage> {
         MaterialPageRoute(
           builder: (_) => UploadCropPage(
             imagePath: savedImage.path,
-            onNext: () => Navigator.pushNamed(context, '/analyzing'),
+            onNext: () => Navigator.pushNamed(
+              context,
+              '/analyzing',
+              arguments: {'imagePath': savedImage.path},
+            ),
             onBack: () => Navigator.pop(context),
           ),
         ),

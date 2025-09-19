@@ -13,6 +13,7 @@ class Users extends Table {
   TextColumn get name => text()();
   TextColumn get gender => text()();
   TextColumn get ageGroup => text()();
+  TextColumn get email => text().nullable()(); // Added email column
   DateTimeColumn get createdAt => dateTime()();
 }
 
@@ -30,7 +31,20 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2; // Increased version for migration
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (Migrator m) {
+      return m.createAll();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        // Add email column when upgrading from version 1 to 2
+        await customStatement('ALTER TABLE users ADD COLUMN email TEXT;');
+      }
+    },
+  );
 
   // --- User Methods ---
   Future<int> insertUser(UsersCompanion user) => into(users).insert(user);
@@ -42,9 +56,15 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  Future<bool> updateUser(UsersCompanion user) => update(users).replace(user);
+  Future<User?> getUserById(int id) async {
+    return (select(users)..where((u) => u.id.equals(id))).getSingleOrNull();
+  }
 
-  // --- Scan Methods (Moved inside the class) ---
+  Future<bool> updateUser(UsersCompanion userCompanion) async {
+    return await update(users).replace(userCompanion);
+  }
+
+  // --- Scan Methods ---
   Future<int> insertScan(ScansCompanion scan) => into(scans).insert(scan);
 
   Future<List<Scan>> getScansForUser(int userId) {

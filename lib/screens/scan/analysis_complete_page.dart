@@ -60,7 +60,10 @@ class _AnalyzedPageState extends State<AnalyzedPage> {
         Navigator.pushReplacementNamed(
           context,
           isMature ? '/mature' : '/immature',
-          arguments: {'name': user.name},
+          arguments: {
+            'name': user.name,
+            'imagePath': imagePath,
+          },
         );
       }
     });

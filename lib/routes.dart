@@ -93,12 +93,16 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/welcome': (context) {
     final args = ModalRoute.of(context)!.settings.arguments as Map;
     final userName = args['name'];
+    final hasResult = args['hasResult'] ?? false;
+
     return WelcomeScreen(
       userName: userName,
+      //hasResult: hasResult,
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
       onProfile: () => Navigator.pushNamed(context, '/ProfilePage'),
     );
   },
+
 
   // Welcome page if the user has a history
   '/welcomeWithResult': (context) {
@@ -210,13 +214,16 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
 
-  '/analyzing': (context) => AnalyzingPage(
-    onComplete: () {
-      // Pass arguments from analyzing to the complete page
-      final args = ModalRoute.of(context)?.settings.arguments;
-      Navigator.pushNamed(context, '/complete', arguments: args);
-    },
-  ),
+  '/analyzing': (context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    return AnalyzingPage(
+      onComplete: () {
+        // Forward the arguments to the complete page
+        Navigator.pushNamed(context, '/complete', arguments: args);
+      },
+    );
+  },
 
   '/complete': (context) {
     // The primary purpose is now to show the "Analysis Completed" screen.
@@ -225,44 +232,21 @@ final Map<String, WidgetBuilder> appRoutes = {
   },
 
   '/mature': (context) {
-    // Correctly parse arguments as a Map
-    final args =
-    ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final userName = args?['name'] ?? 'Guest';
+    final imagePath = args?['imagePath'] as String?;
 
-    return MaturePage(
-      onNext: () => Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => WelcomeScreenWithResult(
-            userName: userName,
-            onNext: () => Navigator.pushNamed(context, '/scanMode'),
-          ),
-        ),
-            (route) => false,
-      ),
-    );
+    return MaturePage(userName: userName, imagePath: imagePath);
   },
 
   '/immature': (context) {
-    // Correctly parse arguments as a Map
-    final args =
-    ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final userName = args?['name'] ?? 'Guest';
+    final imagePath = args?['imagePath'] as String?;
 
-    return ImmaturePage(
-      onNext: () => Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => WelcomeScreenWithResult(
-            userName: userName,
-            onNext: () => Navigator.pushNamed(context, '/scanMode'),
-          ),
-        ),
-            (route) => false,
-      ),
-    );
+    return ImmaturePage(userName: userName, imagePath: imagePath);
   },
+
 
   // Upload Flow
   '/uploadSelect': (context) => SelectPage(

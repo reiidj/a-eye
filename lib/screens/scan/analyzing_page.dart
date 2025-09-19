@@ -30,10 +30,22 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
     });
 
     // Navigate to the completion page after 3 seconds
+    // Navigate to the completion page after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        // The onComplete callback is triggered by the route definition.
-        widget.onComplete?.call();
+        // Get the arguments from the current route
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+        // Debug print to see what we have
+        print('AnalyzingPage arguments: $args');
+
+        // Pass the arguments along when calling onComplete
+        if (widget.onComplete != null) {
+          widget.onComplete!();
+        } else {
+          // Fallback: navigate directly with arguments
+          Navigator.pushNamed(context, '/complete', arguments: args);
+        }
       }
     });
   }
