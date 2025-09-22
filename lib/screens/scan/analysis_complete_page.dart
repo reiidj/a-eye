@@ -6,9 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 class AnalyzedPage extends StatefulWidget {
-  final VoidCallback? onComplete;
+  final double prediction;
+  final String imagePath;
 
-  const AnalyzedPage({super.key, this.onComplete});
+  const AnalyzedPage({
+    super.key,
+    required this.prediction,
+    required this.imagePath,
+  });
 
   @override
   State<AnalyzedPage> createState() => _AnalyzedPageState();

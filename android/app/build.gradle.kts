@@ -16,37 +16,35 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "11"
     }
 
     packagingOptions {
         pickFirst("lib/**/libsqlite3.so")
     }
 
-
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.a_eye"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a","arm64-v8a", "x86_64"))
+        }
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+        getByName("release") {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
 
 dependencies {
-    implementation("org.pytorch:pytorch_android_lite:1.12.2")
-    implementation("org.pytorch:pytorch_android_torchvision_lite:1.12.2")
+    implementation("org.pytorch:pytorch_android:1.12.2")
+    implementation("org.pytorch:pytorch_android_torchvision:1.12.2")
 }
 
 flutter {

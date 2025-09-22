@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:a_eye/image_validator.dart';
 
 class SelectPage extends StatefulWidget {
   final VoidCallback onNext;
@@ -15,55 +16,72 @@ class SelectPage extends StatefulWidget {
 }
 
 class _SelectPageState extends State<SelectPage> {
-  File? _selectedImage;
+  // We no longer need the _selectedImage state variable
+  // File? _selectedImage;
 
-  Future<void> _pickAndSaveImage() async {
+  // 2. Renamed the function for clarity
+  Future<void> _pickAndProcessImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile =
     await picker.pickImage(source: ImageSource.gallery);
 
-    if (pickedFile != null) {
-      final File imageFile = File(pickedFile.path);
+    if (pickedFile == null) return; // User cancelled the action
 
-      // Save a copy to app directory
-      final appDir = await getApplicationDocumentsDirectory();
-      final savedImage = await imageFile.copy(
-          '${appDir.path}/${DateTime.now().millisecondsSinceEpoch}.png');
+    final File imageFile = File(pickedFile.path);
 
-      // REMOVED HIVE LOGIC
-      // final scanBox = Hive.box('scanResultsBox');
-      // await scanBox.put('latestImagePath', savedImage.path);
+    // 3. Show a loading indicator (optional but good for UX)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
 
-      setState(() {
-        _selectedImage = savedImage;
-      });
+    // 4. Call the validator
+    final ValidationResult validationResult =
+    await ImageValidator.validateImageForCataract(imageFile.path);
 
-      // Navigate and pass image path
+    // 5. Dismiss the loading indicator
+    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+
+    // 6. Navigate based on the validation result
+    if (validationResult.isValid) {
+      // If valid, navigate to the crop page
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => UploadCropPage(
-            imagePath: savedImage.path,
+            imagePath: imageFile.path,
             onNext: () => Navigator.pushNamed(
               context,
               '/analyzing',
-              arguments: {'imagePath': savedImage.path},
+              arguments: {'imagePath': imageFile.path},
             ),
             onBack: () => Navigator.pop(context),
           ),
         ),
+      );
+    } else {
+      // If invalid, navigate to the dedicated invalid page for uploads
+      Navigator.pushNamed(
+        context,
+        '/uploadInvalid',
+        arguments: {
+          'imagePath': imageFile.path,
+          'reason': validationResult.reason,
+        },
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // The build method remains unchanged...
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Background image
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -74,8 +92,6 @@ class _SelectPageState extends State<SelectPage> {
               ),
             ),
           ),
-
-          // Bottom button
           Positioned(
             bottom: 20,
             left: 0,
@@ -83,7 +99,8 @@ class _SelectPageState extends State<SelectPage> {
             child: SafeArea(
               child: Center(
                 child: OutlinedButton(
-                  onPressed: _pickAndSaveImage,
+                  // 7. Make sure the button calls the new function
+                  onPressed: _pickAndProcessImage,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                     padding: const EdgeInsets.symmetric(

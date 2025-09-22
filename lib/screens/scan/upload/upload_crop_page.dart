@@ -41,17 +41,15 @@ class _UploadCropPageState extends State<UploadCropPage> {
   }
 
   void _onCropped(Uint8List croppedData) async {
-    final tempPath =
-        '${Directory.systemTemp.path}/cropped_image_${DateTime.now().millisecondsSinceEpoch}.png';
-    final croppedFile = await File(tempPath).writeAsBytes(croppedData);
-
-    // REMOVED HIVE LOGIC
-    // final box = Hive.box('scanResultsBox');
-    // await box.put('latestImagePath', croppedFile.path);
+    // You can still save the file if you need it elsewhere
+    final tempPath = '${Directory.systemTemp.path}/cropped_image_${DateTime.now().millisecondsSinceEpoch}.png';
+    await File(tempPath).writeAsBytes(croppedData);
 
     if (mounted) {
+      // FIX: Pass the image BYTES ('imageBytes') to the next screen.
       Navigator.pushNamed(context, '/analyzing', arguments: {
-        'imagePath': croppedFile.path,
+        'imageBytes': croppedData,
+        'imagePath': tempPath,
       });
     }
   }

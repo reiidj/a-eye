@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:a_eye/screens/welcome_screen.dart';
 
 class MaturePage extends StatelessWidget {
-  final String? imagePath;
   final String userName;
+  final double prediction;
+  final String imagePath;
 
   const MaturePage({
     super.key,
     required this.userName,
-    this.imagePath,
+    required this.prediction,
+    required this.imagePath,
   });
-
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +97,7 @@ class MaturePage extends StatelessWidget {
                                         style: GoogleFonts.urbanist(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFFDD0000),
+                                          color: const Color(0xFFDD0000),
                                         ),
                                       ),
                                     ),
@@ -130,15 +130,15 @@ class MaturePage extends StatelessWidget {
                               // Image
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(15.0),
-                                child: imagePath != null && File(imagePath!).existsSync()
+                                child: imagePath.isNotEmpty && File(imagePath).existsSync()
                                     ? Image.file(
-                                  File(imagePath!),
+                                  File(imagePath),
                                   width: screenWidth * 0.5,
                                   height: screenWidth * 0.5,
                                   fit: BoxFit.cover,
                                 )
                                     : Image.asset(
-                                  'assets/images/Immature.png',
+                                  'assets/images/Immature.png', // Fallback image
                                   width: screenWidth * 0.5,
                                   height: screenWidth * 0.5,
                                   fit: BoxFit.cover,
@@ -240,23 +240,14 @@ class MaturePage extends StatelessWidget {
                           children: [
                             SizedBox(
                               width: double.infinity,
-
-                              // Notify Eye Specialist button
                               child: ElevatedButton(
                                 onPressed: () async {
-                                  const url = 'https://your-placeholder-site.com'; // REPLACE WITH SITE
+                                  const url = 'https://pao.org.ph'; // Using the real PAO website
                                   try {
                                     if (await canLaunchUrl(Uri.parse(url))) {
                                       await launchUrl(
                                         Uri.parse(url),
                                         mode: LaunchMode.externalApplication,
-                                      );
-                                    } else {
-                                      // Show user-friendly message instead of throwing
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Unable to open website at this time'),
-                                        ),
                                       );
                                     }
                                   } catch (e) {
@@ -290,19 +281,14 @@ class MaturePage extends StatelessWidget {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton(
-                                onPressed: () {
-                                  Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => WelcomeScreen(
-                                        userName: userName,
-                                        onNext: () => Navigator.pushNamed(context, '/scanMode'),
-                                        onProfile: () => Navigator.pushNamed(context, '/ProfilePage'),
-                                      ),
-                                    ),
-                                        (route) => false,
-                                  );
-                                },
+                                // --- THIS IS THE FIX ---
+                                onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/welcome',
+                                      (route) => false,
+                                  arguments: {'userName': userName},
+                                ),
+                                // ---------------------
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                                   shape: RoundedRectangleBorder(

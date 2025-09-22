@@ -457,6 +457,17 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -464,6 +475,7 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
     result,
     imagePath,
     timestamp,
+    confidence,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -510,6 +522,14 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
     } else if (isInserting) {
       context.missing(_timestampMeta);
     }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_confidenceMeta);
+    }
     return context;
   }
 
@@ -539,6 +559,10 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}timestamp'],
       )!,
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      )!,
     );
   }
 
@@ -554,12 +578,14 @@ class Scan extends DataClass implements Insertable<Scan> {
   final String result;
   final String? imagePath;
   final DateTime timestamp;
+  final double confidence;
   const Scan({
     required this.id,
     required this.userId,
     required this.result,
     this.imagePath,
     required this.timestamp,
+    required this.confidence,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -571,6 +597,7 @@ class Scan extends DataClass implements Insertable<Scan> {
       map['image_path'] = Variable<String>(imagePath);
     }
     map['timestamp'] = Variable<DateTime>(timestamp);
+    map['confidence'] = Variable<double>(confidence);
     return map;
   }
 
@@ -583,6 +610,7 @@ class Scan extends DataClass implements Insertable<Scan> {
           ? const Value.absent()
           : Value(imagePath),
       timestamp: Value(timestamp),
+      confidence: Value(confidence),
     );
   }
 
@@ -597,6 +625,7 @@ class Scan extends DataClass implements Insertable<Scan> {
       result: serializer.fromJson<String>(json['result']),
       imagePath: serializer.fromJson<String?>(json['imagePath']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      confidence: serializer.fromJson<double>(json['confidence']),
     );
   }
   @override
@@ -608,6 +637,7 @@ class Scan extends DataClass implements Insertable<Scan> {
       'result': serializer.toJson<String>(result),
       'imagePath': serializer.toJson<String?>(imagePath),
       'timestamp': serializer.toJson<DateTime>(timestamp),
+      'confidence': serializer.toJson<double>(confidence),
     };
   }
 
@@ -617,12 +647,14 @@ class Scan extends DataClass implements Insertable<Scan> {
     String? result,
     Value<String?> imagePath = const Value.absent(),
     DateTime? timestamp,
+    double? confidence,
   }) => Scan(
     id: id ?? this.id,
     userId: userId ?? this.userId,
     result: result ?? this.result,
     imagePath: imagePath.present ? imagePath.value : this.imagePath,
     timestamp: timestamp ?? this.timestamp,
+    confidence: confidence ?? this.confidence,
   );
   Scan copyWithCompanion(ScansCompanion data) {
     return Scan(
@@ -631,6 +663,9 @@ class Scan extends DataClass implements Insertable<Scan> {
       result: data.result.present ? data.result.value : this.result,
       imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
     );
   }
 
@@ -641,13 +676,15 @@ class Scan extends DataClass implements Insertable<Scan> {
           ..write('userId: $userId, ')
           ..write('result: $result, ')
           ..write('imagePath: $imagePath, ')
-          ..write('timestamp: $timestamp')
+          ..write('timestamp: $timestamp, ')
+          ..write('confidence: $confidence')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, result, imagePath, timestamp);
+  int get hashCode =>
+      Object.hash(id, userId, result, imagePath, timestamp, confidence);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -656,7 +693,8 @@ class Scan extends DataClass implements Insertable<Scan> {
           other.userId == this.userId &&
           other.result == this.result &&
           other.imagePath == this.imagePath &&
-          other.timestamp == this.timestamp);
+          other.timestamp == this.timestamp &&
+          other.confidence == this.confidence);
 }
 
 class ScansCompanion extends UpdateCompanion<Scan> {
@@ -665,12 +703,14 @@ class ScansCompanion extends UpdateCompanion<Scan> {
   final Value<String> result;
   final Value<String?> imagePath;
   final Value<DateTime> timestamp;
+  final Value<double> confidence;
   const ScansCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.result = const Value.absent(),
     this.imagePath = const Value.absent(),
     this.timestamp = const Value.absent(),
+    this.confidence = const Value.absent(),
   });
   ScansCompanion.insert({
     this.id = const Value.absent(),
@@ -678,15 +718,18 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     required String result,
     this.imagePath = const Value.absent(),
     required DateTime timestamp,
+    required double confidence,
   }) : userId = Value(userId),
        result = Value(result),
-       timestamp = Value(timestamp);
+       timestamp = Value(timestamp),
+       confidence = Value(confidence);
   static Insertable<Scan> custom({
     Expression<int>? id,
     Expression<int>? userId,
     Expression<String>? result,
     Expression<String>? imagePath,
     Expression<DateTime>? timestamp,
+    Expression<double>? confidence,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -694,6 +737,7 @@ class ScansCompanion extends UpdateCompanion<Scan> {
       if (result != null) 'result': result,
       if (imagePath != null) 'image_path': imagePath,
       if (timestamp != null) 'timestamp': timestamp,
+      if (confidence != null) 'confidence': confidence,
     });
   }
 
@@ -703,6 +747,7 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     Value<String>? result,
     Value<String?>? imagePath,
     Value<DateTime>? timestamp,
+    Value<double>? confidence,
   }) {
     return ScansCompanion(
       id: id ?? this.id,
@@ -710,6 +755,7 @@ class ScansCompanion extends UpdateCompanion<Scan> {
       result: result ?? this.result,
       imagePath: imagePath ?? this.imagePath,
       timestamp: timestamp ?? this.timestamp,
+      confidence: confidence ?? this.confidence,
     );
   }
 
@@ -731,6 +777,9 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     if (timestamp.present) {
       map['timestamp'] = Variable<DateTime>(timestamp.value);
     }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
     return map;
   }
 
@@ -741,7 +790,8 @@ class ScansCompanion extends UpdateCompanion<Scan> {
           ..write('userId: $userId, ')
           ..write('result: $result, ')
           ..write('imagePath: $imagePath, ')
-          ..write('timestamp: $timestamp')
+          ..write('timestamp: $timestamp, ')
+          ..write('confidence: $confidence')
           ..write(')'))
         .toString();
   }
@@ -1071,6 +1121,7 @@ typedef $$ScansTableCreateCompanionBuilder =
       required String result,
       Value<String?> imagePath,
       required DateTime timestamp,
+      required double confidence,
     });
 typedef $$ScansTableUpdateCompanionBuilder =
     ScansCompanion Function({
@@ -1079,6 +1130,7 @@ typedef $$ScansTableUpdateCompanionBuilder =
       Value<String> result,
       Value<String?> imagePath,
       Value<DateTime> timestamp,
+      Value<double> confidence,
     });
 
 final class $$ScansTableReferences
@@ -1128,6 +1180,11 @@ class $$ScansTableFilterComposer extends Composer<_$AppDatabase, $ScansTable> {
 
   ColumnFilters<DateTime> get timestamp => $composableBuilder(
     column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get confidence => $composableBuilder(
+    column: $table.confidence,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1184,6 +1241,11 @@ class $$ScansTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -1228,6 +1290,11 @@ class $$ScansTableAnnotationComposer
 
   GeneratedColumn<DateTime> get timestamp =>
       $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => column,
+  );
 
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
@@ -1286,12 +1353,14 @@ class $$ScansTableTableManager
                 Value<String> result = const Value.absent(),
                 Value<String?> imagePath = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
+                Value<double> confidence = const Value.absent(),
               }) => ScansCompanion(
                 id: id,
                 userId: userId,
                 result: result,
                 imagePath: imagePath,
                 timestamp: timestamp,
+                confidence: confidence,
               ),
           createCompanionCallback:
               ({
@@ -1300,12 +1369,14 @@ class $$ScansTableTableManager
                 required String result,
                 Value<String?> imagePath = const Value.absent(),
                 required DateTime timestamp,
+                required double confidence,
               }) => ScansCompanion.insert(
                 id: id,
                 userId: userId,
                 result: result,
                 imagePath: imagePath,
                 timestamp: timestamp,
+                confidence: confidence,
               ),
           withReferenceMapper: (p0) => p0
               .map(

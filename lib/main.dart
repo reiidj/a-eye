@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'routes.dart';
 import 'database/app_database.dart';
-// import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 // Create a global instance of the database
 late AppDatabase database;

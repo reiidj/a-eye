@@ -13,7 +13,7 @@ class Users extends Table {
   TextColumn get name => text()();
   TextColumn get gender => text()();
   TextColumn get ageGroup => text()();
-  TextColumn get email => text().nullable()(); // Added email column
+  TextColumn get email => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 }
 
@@ -24,24 +24,31 @@ class Scans extends Table {
   TextColumn get result => text()();
   TextColumn get imagePath => text().nullable()();
   DateTimeColumn get timestamp => dateTime()();
+  RealColumn get confidence => real()();
 }
 
 @DriftDatabase(tables: [Users, Scans])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  // --- FIX 1: Increment the schema version ---
   @override
-  int get schemaVersion => 2; // Increased version for migration
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) {
       return m.createAll();
     },
+    // --- FIX 2: Add the migration logic for the 'scans' table ---
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
-        // Add email column when upgrading from version 1 to 2
-        await customStatement('ALTER TABLE users ADD COLUMN email TEXT;');
+        // This migration adds the 'email' column to the 'users' table.
+        await m.addColumn(users, users.email);
+      }
+      if (from < 3) {
+        // This migration adds the 'confidence' column to the 'scans' table.
+        await m.addColumn(scans, scans.confidence);
       }
     },
   );

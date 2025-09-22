@@ -37,6 +37,8 @@ class ResultCard extends StatelessWidget {
       fit: BoxFit.cover,
     );
 
+    final bool isMature = title == 'Mature';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -70,41 +72,45 @@ class ResultCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(date,
+                    Text(
+                      date,
                       style: GoogleFonts.urbanist(fontSize: 15, color: Colors.grey[300]),
                     ),
                     const SizedBox(height: 4),
-                    Text(title,
+                    // --- FIX START ---
+                    // Appended " Cataract" to the title string
+                    Text(
+                      '$title Cataract',
                       style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
-                    const SizedBox(height: 8),
-
-                    if (title != 'Immature Cataract')
-                      const SizedBox(height: 8),
-                    if (title != 'Immature Cataract')
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0x26FF6767),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.warning_rounded, color: Colors.red, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                "Please consult now with an eye doctor.",
-                                style: GoogleFonts.urbanist(
-                                  fontSize: 14,
-                                  color: Color(0xFFDD0000),
-                                  fontWeight: FontWeight.bold,
+                    // --- FIX END ---
+                    if (isMature)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0x26FF6767),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.warning_rounded, color: Colors.red, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "Please consult now with an eye doctor.",
+                                  style: GoogleFonts.urbanist(
+                                    fontSize: 14,
+                                    color: const Color(0xFFDD0000),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                   ],

@@ -2,82 +2,45 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class InvalidPage extends StatelessWidget {
-  final VoidCallback? onBack;
+class InvalidImagePage extends StatelessWidget {
+  // --- FIX START: Define constructor parameters ---
   final String imagePath;
+  final String reason;
+  final VoidCallback? onBack;
 
-  // Alternative constructor that's more flexible
-  const InvalidPage({
-    Key? key, // Made key optional and nullable
+  const InvalidImagePage({
+    Key? key,
     required this.imagePath,
+    required this.reason,
     this.onBack,
   }) : super(key: key);
+  // --- FIX END ---
 
   @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
 
+    // The build method now uses the properties from the constructor (e.g., this.reason)
+    // instead of extracting arguments itself.
+
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
       body: Column(
         children: [
-
-          // Header
           Container(
             height: screenHeight * 0.1149,
             width: double.infinity,
             alignment: Alignment.center,
-            child: Text(
-              "Image Review",
-              style: GoogleFonts.urbanist(
-                color: const Color(0xFF5E7EA6),
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text("Image Review", /* ... */),
           ),
-
-          // Display captured image with error handling
           SizedBox(
             height: screenHeight * 0.5095,
             width: double.infinity,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: imagePath.isNotEmpty && File(imagePath).existsSync()
-                      ? Image.file(
-                    File(imagePath),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[800],
-                        child: const Center(
-                          child: Icon(
-                            Icons.error,
-                            color: Colors.white,
-                            size: 50,
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                      : Container(
-                    color: Colors.grey[800],
-                    child: const Center(
-                      child: Text(
-                        'No image available',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: imagePath.isNotEmpty && File(imagePath).existsSync()
+                ? Image.file(File(imagePath), fit: BoxFit.cover)
+                : Container(color: Colors.grey[800], child: const Center(child: Text('No image available'))),
           ),
-
           const Spacer(),
-
-          // Warning
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 37.0, vertical: 12),
             child: Container(
@@ -91,44 +54,28 @@ class InvalidPage extends StatelessWidget {
                   const Icon(Icons.cancel, color: Colors.red),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.urbanist(fontSize: 17, color: Colors.white),
-                        children: const [
-                          TextSpan(text: "The image isn't suitable for analysis. Please upload an image with "),
-                          TextSpan(
-                            text: "visible formation of cataract.",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
+                    // --- FIX: Use the 'reason' from the constructor ---
+                    child: Text(
+                      reason,
+                      style: GoogleFonts.urbanist(fontSize: 17, color: Colors.white),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Retake button
           Padding(
             padding: const EdgeInsets.only(bottom: 96),
             child: OutlinedButton(
+              // --- FIX: Use the 'onBack' callback from the constructor ---
               onPressed: onBack ?? () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                 padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              child: Text(
-                "Retake Photo",
-                style: GoogleFonts.urbanist(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              child: Text("Retake Photo", /* ... */),
             ),
           ),
         ],

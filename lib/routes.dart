@@ -6,7 +6,6 @@ import 'package:a_eye/screens/onboarding/age_select_page.dart';
 
 // Welcome page
 import 'package:a_eye/screens/welcome_screen.dart';
-import 'package:a_eye/screens/welcome_screen_with_result.dart';
 
 // Scan setup
 import 'package:a_eye/screens/scan_setup/scan_mode_page.dart';
@@ -19,8 +18,8 @@ import 'package:a_eye/screens/scan_setup/profile_page.dart';
 import 'package:a_eye/screens/scan/capture/camera_page.dart';
 import 'package:a_eye/screens/scan/analyzing_page.dart';
 import 'package:a_eye/screens/scan/analysis_complete_page.dart';
-import 'package:a_eye/screens/scan/result_immature_page.dart';
-import 'package:a_eye/screens/scan/result_mature_page.dart';
+
+import 'package:a_eye/screens/scan/results_page.dart';
 
 // Scan/capture
 import 'package:a_eye/screens/scan/capture/crop_image_page.dart';
@@ -30,6 +29,24 @@ import 'package:a_eye/screens/scan/capture/invalid_image_page.dart';
 import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
 import 'package:a_eye/screens/scan/upload/upload_select_page.dart';
 import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
+
+CataractType _determineCataractType(String classification) {
+  final lowerClassification = classification.toLowerCase().trim();
+
+  // Check for mature indicators
+  if (lowerClassification.contains('mature')) {
+    return CataractType.mature;
+  }
+
+  // Check for immature indicators
+  if (lowerClassification.contains('immature')) {
+    return CataractType.immature;
+  }
+
+  // Default to immature if unclear
+  print("WARNING: Unknown classification '$classification', defaulting to immature");
+  return CataractType.immature;
+}
 
 final Map<String, WidgetBuilder> appRoutes = {
   // Landing Page
@@ -91,26 +108,15 @@ final Map<String, WidgetBuilder> appRoutes = {
 
   // Welcome Page
   '/welcome': (context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map;
-    final userName = args['name'];
-    final hasResult = args['hasResult'] ?? false;
+    // Extract the arguments sent from the result page
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final userName = args?['userName'] as String? ?? 'Guest';
 
+    // Return the WelcomeScreen with its required callbacks
     return WelcomeScreen(
       userName: userName,
-      //hasResult: hasResult,
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
       onProfile: () => Navigator.pushNamed(context, '/ProfilePage'),
-    );
-  },
-
-
-  // Welcome page if the user has a history
-  '/welcomeWithResult': (context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map;
-    final userName = args['name'];
-    return WelcomeScreenWithResult(
-      userName: userName,
-      onNext: () => Navigator.pushNamed(context, '/scanMode'),
     );
   },
 
@@ -120,7 +126,6 @@ final Map<String, WidgetBuilder> appRoutes = {
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
     );
   },
-
 
   // Scan Setup Flow
   '/scanMode': (context) => ScanModePage(
@@ -143,46 +148,6 @@ final Map<String, WidgetBuilder> appRoutes = {
   // Scan Capture
   '/camera': (context) => const CameraPage(),
 
-  '/processImage': (context) {
-    final args =
-    ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final String imagePath = args?['imagePath'] ?? '';
-    final String selectedEye = args?['selectedEye'] ?? 'Left';
-
-    final random = DateTime.now().millisecondsSinceEpoch % 2;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (random == 0) {
-        Navigator.pushReplacementNamed(
-          context,
-          '/crop',
-          arguments: {
-            'imagePath': imagePath,
-            'selectedEye': selectedEye,
-          },
-        );
-      } else {
-        Navigator.pushReplacementNamed(
-          context,
-          '/invalid',
-          arguments: {
-            'imagePath': imagePath,
-            'selectedEye': selectedEye,
-          },
-        );
-      }
-    });
-
-    return const Scaffold(
-      backgroundColor: Color(0xFF131A21),
-      body: Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF5244F3),
-        ),
-      ),
-    );
-  },
-
   '/crop': (context) {
     final args =
     ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -202,13 +167,15 @@ final Map<String, WidgetBuilder> appRoutes = {
   },
 
   '/invalid': (context) {
-    final args =
-    ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final String imagePath = args?['imagePath'] ?? '';
+    // Extract the arguments sent from the CameraPage
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    return InvalidPage(
-      imagePath: imagePath,
+    // Pass the extracted arguments into the widget's constructor
+    return InvalidImagePage(
+      imagePath: args?['imagePath'] ?? '',
+      reason: args?['reason'] ?? "The image isn't suitable for analysis.",
       onBack: () {
+        // This popUntil logic is correct
         Navigator.popUntil(context, ModalRoute.withName('/camera'));
       },
     );
@@ -226,27 +193,36 @@ final Map<String, WidgetBuilder> appRoutes = {
   },
 
   '/complete': (context) {
-    // The primary purpose is now to show the "Analysis Completed" screen.
-    // Navigation logic is now inside AnalyzedPage.
-    return const AnalyzedPage();
-  },
-
-  '/mature': (context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final userName = args?['name'] ?? 'Guest';
-    final imagePath = args?['imagePath'] as String?;
 
-    return MaturePage(userName: userName, imagePath: imagePath);
+    // Example: read prediction
+    final prediction = args?['prediction'] ?? 0.0;
+    final imagePath = args?['imagePath'] ?? '';
+
+    return AnalyzedPage(
+      prediction: prediction,
+      imagePath: imagePath,
+    );
   },
 
-  '/immature': (context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final userName = args?['name'] ?? 'Guest';
-    final imagePath = args?['imagePath'] as String?;
+  '/results': (context) {
+    // Get the arguments passed from the AnalyzingPage
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
 
-    return ImmaturePage(userName: userName, imagePath: imagePath);
+    // Directly extract the arguments with the correct types
+    final cataractType = args['cataractType'] as CataractType;
+    final userName = args['userName'] as String;
+    final prediction = args['prediction'] as double;
+    final imagePath = args['imagePath'] as String;
+
+    // Pass the data directly to the ResultsPage
+    return ResultsPage(
+      userName: userName,
+      prediction: prediction,
+      imagePath: imagePath,
+      cataractType: cataractType,
+    );
   },
-
 
   // Upload Flow
   '/uploadSelect': (context) => SelectPage(
@@ -265,7 +241,15 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
 
-  '/uploadInvalid': (context) => uploadInvalidPage(
-    onBack: () => Navigator.pop(context),
-  ),
+  '/uploadInvalid': (context) {
+    // Extract the arguments sent from the UploadSelectPage
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    // Pass the extracted arguments into the widget's constructor
+    return UploadInvalidPage(
+      imagePath: args?['imagePath'] ?? '',
+      reason: args?['reason'] ?? "The image isn't suitable for analysis.",
+      onBack: () => Navigator.pop(context),
+    );
+  },
 };

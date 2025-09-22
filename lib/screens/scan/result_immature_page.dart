@@ -1,31 +1,18 @@
 import 'dart:io';
-import 'package:a_eye/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ImmaturePage extends StatelessWidget {
-  final String? imagePath;
+  final String imagePath;
   final String userName;
+  final double prediction;
 
   const ImmaturePage({
     super.key,
     required this.userName,
-    this.imagePath,
+    required this.prediction,
+    required this.imagePath,
   });
-
-  void _navigateToWelcome(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WelcomeScreen(
-          userName: userName,
-          onNext: () => Navigator.pushNamed(context, '/scanMode'),
-          onProfile: () => Navigator.pushNamed(context, '/ProfilePage'),
-        ),
-      ),
-          (route) => false,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,15 +124,14 @@ class ImmaturePage extends StatelessWidget {
                               // Image
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(15.0),
-                                child: imagePath != null &&
-                                    File(imagePath!).existsSync()
+                                child: imagePath.isNotEmpty &&
+                                    File(imagePath).existsSync()
                                     ? Image.file(
-                                  File(imagePath!),
+                                  File(imagePath),
                                   width: screenWidth * 0.5,
                                   height: screenWidth * 0.5,
                                   fit: BoxFit.cover,
                                 )
-
                                     : Image.asset(
                                   'assets/images/Immature.png',
                                   width: screenWidth * 0.5,
@@ -254,7 +240,14 @@ class ImmaturePage extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
-                            onPressed: () => _navigateToWelcome(context),
+                            // --- THIS IS THE FIX ---
+                            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/welcome',
+                                  (route) => false,
+                              arguments: {'userName': userName},
+                            ),
+                            // ---------------------
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(
                                   color: Color(0xFF5244F3), width: 2),

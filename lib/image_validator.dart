@@ -1,158 +1,192 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:image/image.dart' as img;
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
-img.Image _convolution(img.Image src, List<List<int>> kernel) {
-  final int kernelWidth = kernel[0].length;
-  final int kernelHeight = kernel.length;
-  final int kernelCenterX = kernelWidth ~/ 2;
-  final int kernelCenterY = kernelHeight ~/ 2;
+// Lightweight result class
+class ValidationResult {
+  final bool isValid;
+  final bool isCataractPresent;
+  final String reason;
+  final double confidence;
+  final Map<String, double> features;
 
-  final dst = img.Image(width: src.width, height: src.height, numChannels: 1);
-
-  for (int y = 0; y < src.height; ++y) {
-    for (int x = 0; x < src.width; ++x) {
-      double r = 0.0;
-      for (int ky = 0; ky < kernelHeight; ++ky) {
-        for (int kx = 0; kx < kernelWidth; ++kx) {
-          final int pixelX = x + (kx - kernelCenterX);
-          final int pixelY = y + (ky - kernelCenterY);
-
-          if (pixelX >= 0 && pixelX < src.width && pixelY >= 0 && pixelY < src.height) {
-            final p = src.getPixel(pixelX, pixelY);
-            r += p.r * kernel[ky][kx];
-          }
-        }
-      }
-      dst.setPixelR(x, y, r.clamp(0, 255).toInt()); 
-    }
-  }
-  return dst;
+  ValidationResult({
+    required this.isValid,
+    this.isCataractPresent = false,
+    required this.reason,
+    this.confidence = 0.0,
+    this.features = const {},
+  });
 }
 
-img.Image laplacian(img.Image src) {
-  const kernel = [
-    [0, 1, 0],
-    [1, -4, 1],
-    [0, 1, 0]
-  ];
-  return _convolution(src, kernel);
-}
-
+// Simple rectangle class
 class Rect {
   final int left, top, width, height;
   Rect(this.left, this.top, this.width, this.height);
 }
 
-class CataractAnalysisResult {
-  final bool isValid;
-  final bool isCataract;
-  final String reason;
-  CataractAnalysisResult(this.isValid, this.isCataract, this.reason);
-}
-
 class ImageValidator {
-  // Function to check if the image is blurry
-  static bool isBlurry(img.Image image, {double threshold = 60.0}) {
-    final gray = img.grayscale(image);
-    final laplacianImage = laplacian(gray);
+  // Simple thresholds
+  static const double _blurThreshold = 50.0;
+  static const double _intensityThreshold = 70.0;
+  static const double _textureThreshold = 15.0;
 
-    double mean = 0.0;
+  // --- BASIC QUALITY CHECKS ---
+
+  static bool _isImageTooBlurry(img.Image image) {
+    // Simple blur detection - sample only center region
+    final centerX = image.width ~/ 2;
+    final centerY = image.height ~/ 2;
+    final sampleSize = min(50, min(image.width, image.height) ~/ 4);
+
     double variance = 0.0;
     int count = 0;
+    List<int> pixels = [];
 
-    for (final p in laplacianImage) {
-      mean += p.r;
-      count++;
-    }
-    mean /= count;
-
-    for (final p in laplacianImage) {
-      variance += (p.r - mean) * (p.r - mean);
-    }
-    variance /= count;
-
-    return variance < threshold;
-  }
-
-  // Step 2: Eye detection 
-  static Rect? detectEye(img.Image image) {
-    final gray = img.grayscale(image);
-
-    int bestX = 0, bestY = 0, bestW = 0, bestH = 0, maxScore = 0;
-    for (int y = 0; y < gray.height - 50; y += 10) {
-      for (int x = 0; x < gray.width - 50; x += 10) {
-        int score = 0;
-        for (int dy = 0; dy < 50; dy++) {
-          for (int dx = 0; dx < 50; dx++) {
-            int px = (gray.getPixel(x + dx, y + dy).r).toInt();
-            if (px < 60) score++;
-          }
-        }
-        if (score > maxScore) {
-          maxScore = score;
-          bestX = x;
-          bestY = y;
-          bestW = 50;
-          bestH = 50;
+    // Sample small region in center
+    for (int y = centerY - sampleSize ~/ 2; y < centerY + sampleSize ~/ 2; y += 2) {
+      for (int x = centerX - sampleSize ~/ 2; x < centerX + sampleSize ~/ 2; x += 2) {
+        if (x >= 0 && x < image.width && y >= 0 && y < image.height) {
+          pixels.add(image.getPixel(x, y).r.toInt());
+          count++;
         }
       }
     }
-    if (maxScore > 500) {
-      return Rect(bestX, bestY, bestW, bestH);
+
+    if (pixels.length < 10) return true;
+
+    final mean = pixels.reduce((a, b) => a + b) / pixels.length;
+    for (final pixel in pixels) {
+      variance += (pixel - mean) * (pixel - mean);
     }
-    return null;
+    variance /= pixels.length;
+
+    return variance < _blurThreshold;
   }
 
-  // Step 3: Pupil detection
-  static Rect? detectPupil(img.Image eyeRegion) {
-    int bestX = 0, bestY = 0, bestR = 0;
-    double minAvg = 255.0;
-    for (int r = 10; r < min(eyeRegion.width, eyeRegion.height) ~/ 2; r += 5) {
-      for (int cy = r; cy < eyeRegion.height - r; cy += 5) {
-        for (int cx = r; cx < eyeRegion.width - r; cx += 5) {
-          double sum = 0.0;
-          int count = 0;
-          for (int y = -r; y <= r; y++) {
-            for (int x = -r; x <= r; x++) {
-              if (x * x + y * y <= r * r) {
-                int px = (eyeRegion.getPixel(cx + x, cy + y).r).toInt();
-                sum += px;
-                count++;
-              }
+  static bool _hasValidImageSize(img.Image image) {
+    return image.width >= 100 && image.height >= 100 &&
+        image.width <= 4000 && image.height <= 4000;
+  }
+
+  // --- SIMPLE FACE/EYE DETECTION ---
+
+  static Future<Rect?> _findFaceOrEye(String imagePath) async {
+    // Try ML Kit first (lightweight)
+    try {
+      final options = FaceDetectorOptions(
+        enableLandmarks: false,
+        enableContours: false,
+        enableClassification: false,
+        enableTracking: false,
+      );
+      final faceDetector = FaceDetector(options: options);
+      final inputImage = InputImage.fromFilePath(imagePath);
+      final faces = await faceDetector.processImage(inputImage);
+      faceDetector.close();
+
+      if (faces.isNotEmpty) {
+        final face = faces.first;
+        return Rect(
+          face.boundingBox.left.toInt(),
+          face.boundingBox.top.toInt(),
+          face.boundingBox.width.toInt(),
+          face.boundingBox.height.toInt(),
+        );
+      }
+    } catch (e) {
+      // ML Kit failed, continue to fallback
+    }
+
+    // Simple fallback - assume close-up eye (center region)
+    final imageBytes = await File(imagePath).readAsBytes();
+    final image = img.decodeImage(imageBytes);
+    if (image == null) return null;
+
+    // Return center 60% of image as potential eye region
+    final margin = 0.2;
+    final left = (image.width * margin).round();
+    final top = (image.height * margin).round();
+    final width = (image.width * (1 - 2 * margin)).round();
+    final height = (image.height * (1 - 2 * margin)).round();
+
+    return Rect(left, top, width, height);
+  }
+
+  // --- SIMPLE PUPIL DETECTION ---
+
+  static Rect? _findPupil(img.Image eyeRegion) {
+    // Very simple pupil detection - find darkest square region
+    int bestX = 0, bestY = 0;
+    double minBrightness = 255.0;
+
+    final pupilSize = min(eyeRegion.width, eyeRegion.height) ~/ 6;
+    final step = max(5, pupilSize ~/ 4);
+
+    for (int y = 0; y <= eyeRegion.height - pupilSize; y += step) {
+      for (int x = 0; x <= eyeRegion.width - pupilSize; x += step) {
+        double totalBrightness = 0.0;
+        int pixelCount = 0;
+
+        // Sample every 3rd pixel to reduce processing
+        for (int dy = 0; dy < pupilSize; dy += 3) {
+          for (int dx = 0; dx < pupilSize; dx += 3) {
+            if (x + dx < eyeRegion.width && y + dy < eyeRegion.height) {
+              totalBrightness += eyeRegion.getPixel(x + dx, y + dy).r.toDouble();
+              pixelCount++;
             }
           }
-          double avg = count > 0 ? sum / count : 255.0;
-          if (avg < minAvg) {
-            minAvg = avg;
-            bestX = cx;
-            bestY = cy;
-            bestR = r;
+        }
+
+        if (pixelCount > 0) {
+          final avgBrightness = totalBrightness / pixelCount;
+          if (avgBrightness < minBrightness) {
+            minBrightness = avgBrightness;
+            bestX = x;
+            bestY = y;
           }
         }
       }
     }
-    if (minAvg < 80) {
-      return Rect(bestX - bestR, bestY - bestR, bestR * 2, bestR * 2);
+
+    // Only accept if reasonably dark
+    if (minBrightness < 100) {
+      return Rect(bestX, bestY, pupilSize, pupilSize);
     }
+
     return null;
   }
 
-  // Step 4: Cataract feature analysis 
-  static Map<String, double> analyzeCataractFeatures(img.Image pupilRegion) {
-    List<int> pixels = [];
-    for (int y = 0; y < pupilRegion.height; y++) {
-      for (int x = 0; x < pupilRegion.width; x++) {
+  // --- SIMPLE FEATURE ANALYSIS ---
+
+  static Map<String, double> _analyzeBasicFeatures(img.Image pupilRegion) {
+    final pixels = <int>[];
+
+    // Sample every 2nd pixel to reduce processing
+    for (int y = 0; y < pupilRegion.height; y += 2) {
+      for (int x = 0; x < pupilRegion.width; x += 2) {
         pixels.add(pupilRegion.getPixel(x, y).r.toInt());
       }
     }
-    double avgIntensity = pixels.isEmpty ? 0 : pixels.reduce((a, b) => a + b) / pixels.length;
-    double stdDev = pixels.isEmpty
-        ? 0
-        : sqrt(pixels.map((v) => pow(v - avgIntensity, 2)).reduce((a, b) => a + b) / pixels.length);
-    double opacityRatio = pixels.isEmpty
-        ? 0
-        : pixels.where((v) => v > 190).length / pixels.length;
+
+    if (pixels.isEmpty) return {};
+
+    // Basic statistics
+    final avgIntensity = pixels.reduce((a, b) => a + b) / pixels.length;
+
+    double variance = 0.0;
+    for (final pixel in pixels) {
+      variance += (pixel - avgIntensity) * (pixel - avgIntensity);
+    }
+    variance /= pixels.length;
+    final stdDev = sqrt(variance);
+
+    // Simple opacity check
+    final brightPixels = pixels.where((p) => p > 180).length;
+    final opacityRatio = brightPixels / pixels.length;
+
     return {
       'intensity': avgIntensity,
       'texture': stdDev,
@@ -160,80 +194,148 @@ class ImageValidator {
     };
   }
 
-  // Step 5: Cataract classification
-  static CataractAnalysisResult classifyCataract(Map<String, double> features) {
-    if (features.isEmpty) {
-      return CataractAnalysisResult(false, false, "Analysis failed: Could not extract features.");
-    }
-    double score = 0;
-    List<String> reasons = [];
-    double intensity = features['intensity'] ?? 0;
-    double texture = features['texture'] ?? 0;
-    double opacity = features['opacity_ratio'] ?? 0;
+  // --- SIMPLE CATARACT CHECK ---
 
-    if (intensity > 100) {
-      score += (intensity - 100) / 20.0;
-      reasons.add("High Intensity (${intensity.toStringAsFixed(1)})");
-    }
-    if (texture > 20) {
-      score += (texture - 20) / 10.0;
-      reasons.add("High Texture (${texture.toStringAsFixed(1)})");
-    }
-    if (opacity > 0.1) {
-      score += opacity * 15;
-      reasons.add("High Opacity (${opacity.toStringAsFixed(2)})");
-    }
-    bool isCataract = score >= 1.5;
-    String reason = '''
-  Score: ${score.toStringAsFixed(2)}
-  Features: Intensity=${intensity.toStringAsFixed(2)}, Texture=${texture.toStringAsFixed(2)}, Opacity=${opacity.toStringAsFixed(2)}
-  Indicators: ${reasons.join(', ')}
-  '''; 
-    return CataractAnalysisResult(true, isCataract, reason);
+  static bool _hasCataractIndicators(Map<String, double> features) {
+    if (features.isEmpty) return false;
+
+    final intensity = features['intensity'] ?? 0;
+    final texture = features['texture'] ?? 0;
+    final opacity = features['opacity_ratio'] ?? 0;
+
+    // Simple threshold checks
+    return intensity > _intensityThreshold ||
+        texture > _textureThreshold ||
+        opacity > 0.1;
   }
 
-  static Future<CataractAnalysisResult> validateImageForCataract(String imagePath) async {
-    final file = File(imagePath);
-    if (!await file.exists()) {
-      return CataractAnalysisResult(false, false, "File does not exist.");
+  // --- MAIN VALIDATION FUNCTION ---
+
+  static Future<ValidationResult> validateImageForCataract(String imagePath) async {
+    try {
+      // 1. Check file exists
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        return ValidationResult(
+          isValid: false,
+          reason: "Image file not found.",
+        );
+      }
+
+      // 2. Try to decode image
+      final imageBytes = await file.readAsBytes();
+      final image = img.decodeImage(imageBytes);
+      if (image == null) {
+        return ValidationResult(
+          isValid: false,
+          reason: "Could not read image file. Please check the image format.",
+        );
+      }
+
+      // 3. Check image size
+      if (!_hasValidImageSize(image)) {
+        return ValidationResult(
+          isValid: false,
+          reason: "Image size is not suitable. Please use an image between 100x100 and 4000x4000 pixels.",
+        );
+      }
+
+      // 4. Check if too blurry
+      if (_isImageTooBlurry(image)) {
+        return ValidationResult(
+          isValid: false,
+          reason: "Image is too blurry. Please take a clearer photo.",
+        );
+      }
+
+      // 5. Find face or eye region
+      final eyeRect = await _findFaceOrEye(imagePath);
+      if (eyeRect == null) {
+        return ValidationResult(
+          isValid: false,
+          reason: "Could not detect an eye in the image. Please ensure the eye is clearly visible.",
+        );
+      }
+
+      // 6. Extract eye region
+      final eyeRegion = img.copyCrop(
+        image,
+        x: eyeRect.left,
+        y: eyeRect.top,
+        width: eyeRect.width,
+        height: eyeRect.height,
+      );
+
+      // 7. Find pupil
+      final pupilRect = _findPupil(eyeRegion);
+      if (pupilRect == null) {
+        return ValidationResult(
+          isValid: false,
+          reason: "Could not locate the pupil. Please ensure the eye is well-lit and clearly visible.",
+        );
+      }
+
+      // 8. Extract pupil region
+      final pupilRegion = img.copyCrop(
+        eyeRegion,
+        x: pupilRect.left,
+        y: pupilRect.top,
+        width: pupilRect.width,
+        height: pupilRect.height,
+      );
+
+      // 9. Analyze basic features
+      final features = _analyzeBasicFeatures(pupilRegion);
+
+      // 10. Check for cataract indicators
+      final hasCataract = _hasCataractIndicators(features);
+
+      if (!hasCataract) {
+        return ValidationResult(
+          isValid: false,
+          isCataractPresent: false,
+          reason: "The ML model requires eyes with cataract indicators.",
+          features: features,
+        );
+      }
+
+      // Success - image is suitable for ML model
+      return ValidationResult(
+        isValid: true,
+        isCataractPresent: true,
+        reason: "✓ Image validation successful. Cataract features detected and ready for ML analysis.",
+        confidence: 0.8,
+        features: features,
+      );
+
+    } catch (e) {
+      return ValidationResult(
+        isValid: false,
+        reason: "An error occurred during validation: ${e.toString()}",
+      );
     }
-    final imageBytes = await file.readAsBytes();
-    final image = img.decodeImage(imageBytes);
-    if (image == null) {
-      return CataractAnalysisResult(false, false, "Could not decode image.");
-    }
-    if (isBlurry(image)) {
-      return CataractAnalysisResult(false, false, "Image is blurry.");
-    }
-    final eyeRect = detectEye(image);
-    if (eyeRect == null) {
-      return CataractAnalysisResult(false, false, "No eye found.");
-    }
-    final eyeRegion = img.copyCrop(
-      image,
-      x: eyeRect.left,
-      y: eyeRect.top,
-      width: eyeRect.width,
-      height: eyeRect.height,
-    );
-    final pupilRect = detectPupil(eyeRegion);
-    if (pupilRect == null) {
-      return CataractAnalysisResult(false, false, "No pupil found.");
-    }
-    final pupilRegion = img.copyCrop(
-      eyeRegion,
-      x: pupilRect.left,
-      y: pupilRect.top,
-      width: pupilRect.width,
-      height: pupilRect.height,
-    );
-    final features = analyzeCataractFeatures(pupilRegion);
-    final result = classifyCataract(features);
-    return result;
   }
 
-  static Future<bool> isImageValid(String imagePath) async {
-    final result = await validateImageForCataract(imagePath);
-    return result.isValid && result.isCataract;
+  // --- UTILITY FUNCTIONS ---
+
+  static Future<bool> quickImageCheck(String imagePath) async {
+    try {
+      final file = File(imagePath);
+      if (!await file.exists()) return false;
+
+      final imageBytes = await file.readAsBytes();
+      if (imageBytes.length > 10 * 1024 * 1024) return false; // >10MB
+
+      final image = img.decodeImage(imageBytes);
+      return image != null && _hasValidImageSize(image);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // --- ALTERNATIVE METHOD NAME FOR ML MODEL ---
+
+  static Future<ValidationResult> validateImageForMLModel(String imagePath) async {
+    return validateImageForCataract(imagePath);
   }
 }
