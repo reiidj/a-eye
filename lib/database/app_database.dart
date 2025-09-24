@@ -73,6 +73,15 @@ class AppDatabase extends _$AppDatabase {
 
   // --- Scan Methods ---
   Future<int> insertScan(ScansCompanion scan) => into(scans).insert(scan);
+  Future<bool> updateScan(ScansCompanion scan) => update(scans).replace(scan);
+
+  Future<Scan?> getLatestScan() async {
+    return (select(scans)
+      ..orderBy(
+          [(s) => OrderingTerm(expression: s.timestamp, mode: OrderingMode.desc)])
+      ..limit(1))
+        .getSingleOrNull();
+  }
 
   Future<List<Scan>> getScansForUser(int userId) {
     return (select(scans)

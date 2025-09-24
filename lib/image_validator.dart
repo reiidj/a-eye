@@ -253,7 +253,7 @@ class ImageValidator {
       if (eyeRect == null) {
         return ValidationResult(
           isValid: false,
-          reason: "Could not detect an eye in the image. Please ensure the eye is clearly visible.",
+          reason: "Could not detect an eye in the image. Please ensure the eye is clearly visible or not too close.",
         );
       }
 

@@ -9,12 +9,14 @@ class WelcomeScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onProfile;
   final String userName;
+  final VoidCallback onGuide;
 
   const WelcomeScreen({
     super.key,
     required this.onNext,
     required this.onProfile,
     required this.userName,
+    required this.onGuide,
   });
 
   @override
@@ -74,13 +76,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                     ),
                   ),
+
                   Positioned(
                     top: -30,
                     right: 0,
-                    child: SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: Image.asset('assets/images/A-Eye Icon.png'),
+                    child: GestureDetector(
+                      onTap: widget.onGuide,
+                      child: SizedBox(
+                        width: 160,
+                        height: 160,
+                        child: Image.asset('assets/images/A-Eye Icon.png'),
+                      ),
                     ),
                   ),
                 ],
@@ -107,10 +113,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       final hasHistory = snapshot.hasData && snapshot.data!.isNotEmpty;
                       final results = snapshot.data ?? [];
 
-                      // --- FIX: Sort the history results by date ---
                       // This ensures the most recent scan is always first.
                       results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-                      // --- END OF FIX ---
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

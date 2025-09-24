@@ -6,6 +6,7 @@ import 'package:a_eye/screens/onboarding/age_select_page.dart';
 
 // Welcome page
 import 'package:a_eye/screens/welcome_screen.dart';
+import 'package:a_eye/screens/guide_page.dart';
 
 // Scan setup
 import 'package:a_eye/screens/scan_setup/scan_mode_page.dart';
@@ -117,6 +118,13 @@ final Map<String, WidgetBuilder> appRoutes = {
       userName: userName,
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
       onProfile: () => Navigator.pushNamed(context, '/ProfilePage'),
+      onGuide: () => Navigator.pushNamed(context, '/guide'),
+    );
+  },
+
+  '/guide': (context) {
+    return GuidePage(
+      onNext: () => Navigator.pushNamed(context, '/scanMode'),
     );
   },
 
