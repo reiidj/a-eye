@@ -48,6 +48,8 @@ dependencies:
   url_launcher: ^6.3.1
   provider: ^6.1.5
   google_mlkit_face_detection: ^0.13.1
+  pdf: ^3.11.3
+  printing: ^5.14.2
 
 dev_dependencies:
   flutter_test:

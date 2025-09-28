@@ -164,19 +164,20 @@ class _UploadCropPageState extends State<UploadCropPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 OutlinedButton(
                   onPressed: widget.onBack,
                   style: OutlinedButton.styleFrom(
                     side:
                     const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 95, vertical: 18),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20)),
                   ),
                   child: Text(
                     "Re-Upload Image",
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.urbanist(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

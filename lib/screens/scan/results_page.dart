@@ -1,5 +1,3 @@
-// reiidj/a-eye/a-eye-validation/lib/screens/scan/results_page.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,11 +8,10 @@ import 'package:path/path.dart' as p;
 import 'package:a_eye/database/app_database.dart';
 import 'package:drift/drift.dart' as drift;
 
-
 enum CataractType { immature, mature }
 
 class ResultsPage extends StatefulWidget {
-  final String imagePath; // Initially, this is the temporary path
+  final String imagePath;
   final String userName;
   final double prediction;
   final CataractType cataractType;
@@ -32,7 +29,6 @@ class ResultsPage extends StatefulWidget {
 }
 
 class _ResultsPageState extends State<ResultsPage> {
-  // State variable to hold the new, permanent path
   String? _permanentImagePath;
 
   @override
@@ -211,41 +207,51 @@ class _ResultsPageState extends State<ResultsPage> {
 
   Widget _buildStatusIndicator() {
     if (widget.cataractType == CataractType.immature) {
+      // This part is already responsive, so no changes are needed here.
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: const Color(0xFF362D1A),
           borderRadius: BorderRadius.circular(24),
         ),
-        child: Text(
-          "Immature Cataract Detected",
-          style: GoogleFonts.urbanist(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFE69146),
+        // FittedBox ensures the text scales down if it's too long
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            "Immature Cataract Detected",
+            style: GoogleFonts.urbanist(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFE69146),
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
       );
     } else {
+      // This is where the fix is applied for the mature cataract case.
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
           color: const Color(0x26FF6767),
           borderRadius: BorderRadius.circular(24),
         ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.warning_rounded,
-              color: Color(0xFFDD0000),
-              size: 28,
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
+        // By wrapping the Row with FittedBox, the contents will scale down
+        // to fit the available width, preventing any text wrapping.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.warning_rounded,
+                color: Color(0xFFDD0000),
+                size: 28,
+              ),
+              const SizedBox(width: 8), // Added a bit more space
+              Text(
                 "Mature Cataract Detected",
                 style: GoogleFonts.urbanist(
                   fontSize: 20,
@@ -253,8 +259,8 @@ class _ResultsPageState extends State<ResultsPage> {
                   color: const Color(0xFFDD0000),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }

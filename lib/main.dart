@@ -2,11 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'routes.dart';
 import 'database/app_database.dart';
+import 'dart:developer' as developer;
 
 // Create a global instance of the database
 late AppDatabase database;
 
 void main() async{
+  FlutterError.onError = (FlutterErrorDetails details) {
+    developer.log(
+      details.exceptionAsString(),
+      error: details.exception,
+      stackTrace: details.stack,
+    );
+  };
   // Initialize the database
   database = AppDatabase();
   WidgetsFlutterBinding.ensureInitialized();
