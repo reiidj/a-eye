@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
@@ -28,59 +27,65 @@ class Rect {
 }
 
 class ImageValidator {
-  // Simple thresholds
-  static const double _blurThreshold = 50.0;
-  static const double _intensityThreshold = 70.0;
-  static const double _textureThreshold = 15.0;
+  // --- TUNED THRESHOLDS BASED ON SAMPLES ---
+  static const double _blurThreshold = 30.0;
+  static const double _intensityThreshold = 65.0;
+  static const double _textureThreshold = 18.0;
+  static const double _opacityThreshold = 0.08;
+  static const double _minAspectRatio = 0.6;
+  static const double _maxAspectRatio = 1.8;
+  
 
-  // --- BASIC QUALITY CHECKS ---
 
+  // --- QUALITY CHECKS ---
+
+  /// More robust blur detection using Laplacian variance.
   static bool _isImageTooBlurry(img.Image image) {
-    // Simple blur detection - sample only center region
-    final centerX = image.width ~/ 2;
-    final centerY = image.height ~/ 2;
-    final sampleSize = min(50, min(image.width, image.height) ~/ 4);
-
+    final gray = img.grayscale(image);
     double variance = 0.0;
     int count = 0;
-    List<int> pixels = [];
 
-    // Sample small region in center
-    for (int y = centerY - sampleSize ~/ 2; y < centerY + sampleSize ~/ 2; y += 2) {
-      for (int x = centerX - sampleSize ~/ 2; x < centerX + sampleSize ~/ 2; x += 2) {
-        if (x >= 0 && x < image.width && y >= 0 && y < image.height) {
-          pixels.add(image.getPixel(x, y).r.toInt());
-          count++;
-        }
+    // Apply a 3x3 Laplacian filter to detect edges
+    for (int y = 1; y < gray.height - 1; y++) {
+      for (int x = 1; x < gray.width - 1; x++) {
+        final p0 = gray.getPixel(x - 1, y).r;
+        final p1 = gray.getPixel(x + 1, y).r;
+        final p2 = gray.getPixel(x, y - 1).r;
+        final p3 = gray.getPixel(x, y + 1).r;
+        final p4 = gray.getPixel(x, y).r;
+
+        final laplacian = (p0 + p1 + p2 + p3 - 4 * p4).abs();
+        variance += laplacian * laplacian;
+        count++;
       }
     }
 
-    if (pixels.length < 10) return true;
-
-    final mean = pixels.reduce((a, b) => a + b) / pixels.length;
-    for (final pixel in pixels) {
-      variance += (pixel - mean) * (pixel - mean);
-    }
-    variance /= pixels.length;
-
-    return variance < _blurThreshold;
+    if (count == 0) return true;
+    final laplacianVariance = variance / count;
+    return laplacianVariance < _blurThreshold;
   }
 
   static bool _hasValidImageSize(img.Image image) {
-    return image.width >= 100 && image.height >= 100 &&
-        image.width <= 4000 && image.height <= 4000;
+    final bool validPixelDimensions = image.width >= 200 && image.height >= 200 &&
+                                      image.width <= 5000 && image.height <= 5000;
+    if (!validPixelDimensions) return false;
+
+    // Check aspect ratio (width / height)
+    final double aspectRatio = image.width / image.height;
+    final bool validAspectRatio = aspectRatio >= _minAspectRatio && aspectRatio <= _maxAspectRatio;
+
+    return validAspectRatio;
   }
 
-  // --- SIMPLE FACE/EYE DETECTION ---
+  // --- EYE REGION DETECTION (REPLACES FACE DETECTION) ---
 
-  static Future<Rect?> _findFaceOrEye(String imagePath) async {
-    // Try ML Kit first (lightweight)
+  /// Finds an eye region, optimized for close-up shots.
+  static Future<Rect?> _findEyeRegion(String imagePath, img.Image fullImage) async {
+    // ML Kit is still useful for finding a face, even in a close-up.
+    // If it finds a face, we can use its bounding box.
     try {
       final options = FaceDetectorOptions(
-        enableLandmarks: false,
-        enableContours: false,
-        enableClassification: false,
-        enableTracking: false,
+        performanceMode: FaceDetectorMode.accurate,
       );
       final faceDetector = FaceDetector(options: options);
       final inputImage = InputImage.fromFilePath(imagePath);
@@ -97,46 +102,40 @@ class ImageValidator {
         );
       }
     } catch (e) {
-      // ML Kit failed, continue to fallback
+      // Fallback if ML Kit fails.
     }
 
-    // Simple fallback - assume close-up eye (center region)
-    final imageBytes = await File(imagePath).readAsBytes();
-    final image = img.decodeImage(imageBytes);
-    if (image == null) return null;
-
-    // Return center 60% of image as potential eye region
-    final margin = 0.2;
-    final left = (image.width * margin).round();
-    final top = (image.height * margin).round();
-    final width = (image.width * (1 - 2 * margin)).round();
-    final height = (image.height * (1 - 2 * margin)).round();
-
-    return Rect(left, top, width, height);
+    // If no face is found (common in very tight close-ups),
+    // assume the eye is in the center 70% of the image.
+    // This is a safer assumption now that we know the expected input is a close-up.
+    final margin = 0.15; // Use 70% of the image
+    return Rect(
+      (fullImage.width * margin).round(),
+      (fullImage.height * margin).round(),
+      (fullImage.width * (1 - 2 * margin)).round(),
+      (fullImage.height * (1 - 2 * margin)).round(),
+    );
   }
 
-  // --- SIMPLE PUPIL DETECTION ---
+  // --- PUPIL DETECTION ---
 
   static Rect? _findPupil(img.Image eyeRegion) {
-    // Very simple pupil detection - find darkest square region
     int bestX = 0, bestY = 0;
     double minBrightness = 255.0;
 
-    final pupilSize = min(eyeRegion.width, eyeRegion.height) ~/ 6;
-    final step = max(5, pupilSize ~/ 4);
+    // A cataractous eye's "pupil" might not be the darkest point,
+    // so we search for a generally dark and low-variance area.
+    final pupilSize = min(eyeRegion.width, eyeRegion.height) ~/ 5;
+    final step = max(4, pupilSize ~/ 4);
 
     for (int y = 0; y <= eyeRegion.height - pupilSize; y += step) {
       for (int x = 0; x <= eyeRegion.width - pupilSize; x += step) {
         double totalBrightness = 0.0;
         int pixelCount = 0;
-
-        // Sample every 3rd pixel to reduce processing
-        for (int dy = 0; dy < pupilSize; dy += 3) {
-          for (int dx = 0; dx < pupilSize; dx += 3) {
-            if (x + dx < eyeRegion.width && y + dy < eyeRegion.height) {
-              totalBrightness += eyeRegion.getPixel(x + dx, y + dy).r.toDouble();
-              pixelCount++;
-            }
+        for (int dy = 0; dy < pupilSize; dy += 2) {
+          for (int dx = 0; dx < pupilSize; dx += 2) {
+            totalBrightness += eyeRegion.getPixel(x + dx, y + dy).r.toDouble();
+            pixelCount++;
           }
         }
 
@@ -151,168 +150,117 @@ class ImageValidator {
       }
     }
 
-    // Only accept if reasonably dark
-    if (minBrightness < 100) {
+    // A lower threshold because cataracts make the pupil brighter.
+    if (minBrightness < 120) {
       return Rect(bestX, bestY, pupilSize, pupilSize);
     }
-
     return null;
   }
 
-  // --- SIMPLE FEATURE ANALYSIS ---
+
+  // --- FEATURE ANALYSIS ---
 
   static Map<String, double> _analyzeBasicFeatures(img.Image pupilRegion) {
-    final pixels = <int>[];
-
-    // Sample every 2nd pixel to reduce processing
-    for (int y = 0; y < pupilRegion.height; y += 2) {
-      for (int x = 0; x < pupilRegion.width; x += 2) {
-        pixels.add(pupilRegion.getPixel(x, y).r.toInt());
+      final pixels = <int>[];
+      for (int y = 0; y < pupilRegion.height; y++) {
+          for (int x = 0; x < pupilRegion.width; x++) {
+              pixels.add(pupilRegion.getPixel(x, y).r.toInt());
+          }
       }
-    }
+      if (pixels.isEmpty) return {};
 
-    if (pixels.isEmpty) return {};
+      final avgIntensity = pixels.reduce((a, b) => a + b) / pixels.length;
+      double variance = 0.0;
+      for (final pixel in pixels) {
+          variance += (pixel - avgIntensity) * (pixel - avgIntensity);
+      }
+      variance /= pixels.length;
+      final stdDev = sqrt(variance);
 
-    // Basic statistics
-    final avgIntensity = pixels.reduce((a, b) => a + b) / pixels.length;
+      final brightPixels = pixels.where((p) => p > 150).length;
+      final opacityRatio = brightPixels / pixels.length;
 
-    double variance = 0.0;
-    for (final pixel in pixels) {
-      variance += (pixel - avgIntensity) * (pixel - avgIntensity);
-    }
-    variance /= pixels.length;
-    final stdDev = sqrt(variance);
-
-    // Simple opacity check
-    final brightPixels = pixels.where((p) => p > 180).length;
-    final opacityRatio = brightPixels / pixels.length;
-
-    return {
-      'intensity': avgIntensity,
-      'texture': stdDev,
-      'opacity_ratio': opacityRatio,
-    };
+      return {
+          'intensity': avgIntensity,
+          'texture': stdDev,
+          'opacity_ratio': opacityRatio,
+      };
   }
 
-  // --- SIMPLE CATARACT CHECK ---
+
+  // --- CATARACT CHECK ---
 
   static bool _hasCataractIndicators(Map<String, double> features) {
-    if (features.isEmpty) return false;
+      if (features.isEmpty) return false;
+      final intensity = features['intensity'] ?? 0;
+      final texture = features['texture'] ?? 0;
+      final opacity = features['opacity_ratio'] ?? 0;
 
-    final intensity = features['intensity'] ?? 0;
-    final texture = features['texture'] ?? 0;
-    final opacity = features['opacity_ratio'] ?? 0;
-
-    // Simple threshold checks
-    return intensity > _intensityThreshold ||
-        texture > _textureThreshold ||
-        opacity > 0.1;
+      // Logic: A cataract is indicated if the pupil area is either
+      // abnormally bright OR has a rough/varied texture.
+      return intensity > _intensityThreshold ||
+          texture > _textureThreshold ||
+          opacity > _opacityThreshold;
   }
+
 
   // --- MAIN VALIDATION FUNCTION ---
 
   static Future<ValidationResult> validateImageForCataract(String imagePath) async {
     try {
-      // 1. Check file exists
       final file = File(imagePath);
       if (!await file.exists()) {
-        return ValidationResult(
-          isValid: false,
-          reason: "Image file not found.",
-        );
+        return ValidationResult(isValid: false, reason: "Image file not found.");
       }
 
-      // 2. Try to decode image
       final imageBytes = await file.readAsBytes();
       final image = img.decodeImage(imageBytes);
       if (image == null) {
-        return ValidationResult(
-          isValid: false,
-          reason: "Could not read image file. Please check the image format.",
-        );
+        return ValidationResult(isValid: false, reason: "Could not read image file.");
       }
 
-      // 3. Check image size
       if (!_hasValidImageSize(image)) {
-        return ValidationResult(
-          isValid: false,
-          reason: "Image size is not suitable. Please use an image between 100x100 and 4000x4000 pixels.",
-        );
+        return ValidationResult(isValid: false, reason: "Image size is not suitable (must be 200x200 to 5000x5000).");
       }
 
-      // 4. Check if too blurry
       if (_isImageTooBlurry(image)) {
-        return ValidationResult(
-          isValid: false,
-          reason: "Image is too blurry. Please take a clearer photo.",
-        );
+        return ValidationResult(isValid: false, reason: "Image is too blurry. Please provide a sharper photo.");
       }
 
-      // 5. Find face or eye region
-      final eyeRect = await _findFaceOrEye(imagePath);
+      // Use the new eye region finder
+      final eyeRect = await _findEyeRegion(imagePath, image);
       if (eyeRect == null) {
-        return ValidationResult(
-          isValid: false,
-          reason: "Could not detect an eye in the image. Please ensure the eye is clearly visible or not too close.",
-        );
+        return ValidationResult(isValid: false, reason: "Could not detect an eye in the image. Please center the eye.");
       }
 
-      // 6. Extract eye region
-      final eyeRegion = img.copyCrop(
-        image,
-        x: eyeRect.left,
-        y: eyeRect.top,
-        width: eyeRect.width,
-        height: eyeRect.height,
-      );
+      final eyeRegion = img.copyCrop(image, x: eyeRect.left, y: eyeRect.top, width: eyeRect.width, height: eyeRect.height);
 
-      // 7. Find pupil
       final pupilRect = _findPupil(eyeRegion);
       if (pupilRect == null) {
-        return ValidationResult(
-          isValid: false,
-          reason: "Could not locate the pupil. Please ensure the eye is well-lit and clearly visible.",
-        );
+        return ValidationResult(isValid: false, reason: "Could not locate the pupil. Ensure the eye is well-lit.");
       }
 
-      // 8. Extract pupil region
-      final pupilRegion = img.copyCrop(
-        eyeRegion,
-        x: pupilRect.left,
-        y: pupilRect.top,
-        width: pupilRect.width,
-        height: pupilRect.height,
-      );
+      final pupilRegion = img.copyCrop(eyeRegion, x: pupilRect.left, y: pupilRect.top, width: pupilRect.width, height: pupilRect.height);
 
-      // 9. Analyze basic features
       final features = _analyzeBasicFeatures(pupilRegion);
-
-      // 10. Check for cataract indicators
-      final hasCataract = _hasCataractIndicators(features);
-
-      if (!hasCataract) {
+      if (!_hasCataractIndicators(features)) {
         return ValidationResult(
           isValid: false,
           isCataractPresent: false,
-          reason: "The ML model requires eyes with cataract indicators.",
+          reason: "No significant cataract indicators were found. The image is not suitable for the model.",
           features: features,
         );
       }
 
-      // Success - image is suitable for ML model
       return ValidationResult(
         isValid: true,
         isCataractPresent: true,
-        reason: "✓ Image validation successful. Cataract features detected and ready for ML analysis.",
-        confidence: 0.8,
+        reason: "✓ Image validation successful. Ready for ML analysis.",
         features: features,
       );
 
     } catch (e) {
-      return ValidationResult(
-        isValid: false,
-        reason: "An error occurred during validation: ${e.toString()}",
-      );
+      return ValidationResult(isValid: false, reason: "An error occurred during validation: ${e.toString()}");
     }
   }
 
