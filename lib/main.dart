@@ -4,10 +4,22 @@ import 'routes.dart';
 import 'database/app_database.dart';
 import 'dart:developer' as developer;
 
+// Import Firebase Core and the generated options file
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 // Create a global instance of the database
 late AppDatabase database;
 
-void main() async{
+void main() async {
+  // Ensure that Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   FlutterError.onError = (FlutterErrorDetails details) {
     developer.log(
       details.exceptionAsString(),
@@ -15,9 +27,8 @@ void main() async{
       stackTrace: details.stack,
     );
   };
-  // Initialize the database
+  // Initialize the local database
   database = AppDatabase();
-  WidgetsFlutterBinding.ensureInitialized();
 
   // Run the app, providing the database instance to the widget tree
   runApp(

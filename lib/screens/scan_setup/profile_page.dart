@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:a_eye/database/app_database.dart';
 
+// Import Cloud Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ProfilePage extends StatefulWidget {
   final VoidCallback onNext;
 
@@ -90,80 +93,110 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// Save updated user data to database
+  /// Save updated user data to the local database and to Firebase Firestore.
   Future<void> _saveUserData() async {
-    if (nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Name is required'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    final String name = nameController.text.trim();
+    final String? gender = _selectedGender;
+    final String? ageGroup = _selectedAgeGroup;
+    final String email = emailController.text.trim();
+
+    // --- Input Validation ---
+    if (name.isEmpty) {
+      _showErrorSnackBar('Name is required');
+      return;
+    }
+    if (gender == null) {
+      _showErrorSnackBar('Gender is required');
+      return;
+    }
+    if (ageGroup == null) {
+      _showErrorSnackBar('Age group is required');
+      return;
+    }
+    if (email.isEmpty) {
+      _showErrorSnackBar('Email is required to save data online');
+      return;
+    }
+    if (!_isValidEmail(email)) {
+      _showErrorSnackBar('Please enter a valid email address');
       return;
     }
 
-    if (_selectedGender == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gender is required'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (_selectedAgeGroup == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Age group is required'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    setState(() => isSaving = true);
 
     try {
-      setState(() => isSaving = true);
-
-      final String name = nameController.text.trim();
-      final String gender = _selectedGender!;
-      final String ageGroup = _selectedAgeGroup!;
-      final String email = emailController.text.trim();
-
-      if (email.isNotEmpty && !_isValidEmail(email)) {
-        throw 'Please enter a valid email address';
-      }
-
+      // --- 1. Save to Local Database (Drift) ---
+      int userId;
       if (currentUser != null) {
+        // Update existing user
         final updatedUserCompanion = currentUser!.toCompanion(false).copyWith(
-          name: Value(name),
-          gender: Value(gender),
-          ageGroup: Value(ageGroup),
-          email: email.isEmpty ? const Value(null) : Value(email),
-        );
-
+              name: Value(name),
+              gender: Value(gender),
+              ageGroup: Value(ageGroup),
+              email: Value(email),
+            );
         await database.updateUser(updatedUserCompanion);
-        final refreshedUser = await database.getUserById(currentUser!.id);
-        setState(() => currentUser = refreshedUser);
+        userId = currentUser!.id;
       } else {
+        // Insert new user
         final newUser = UsersCompanion(
           name: Value(name),
           gender: Value(gender),
           ageGroup: Value(ageGroup),
-          email: email.isEmpty ? const Value(null) : Value(email),
+          email: Value(email),
           createdAt: Value(DateTime.now()),
         );
-        final userId = await database.insertUser(newUser);
-        final createdUser = await database.getUserById(userId);
-        setState(() => currentUser = createdUser);
+        userId = await database.insertUser(newUser);
       }
 
-      setState(() => isSaving = false);
+      // Refresh the current user state
+      final savedUser = await database.getUserById(userId);
+      if (savedUser == null) throw 'Failed to save user locally.';
+      setState(() => currentUser = savedUser);
 
+
+      // --- 2. Save to Online Database (Firestore) ---
+      final firestore = FirebaseFirestore.instance;
+      final userDocRef = firestore.collection('users').doc(email);
+
+      // Get all scan history for the user from the local db
+      final userScans = await database.getScansForUser(userId);
+
+      // Prepare personal info data for Firestore
+      final userInfo = {
+        'name': name,
+        'gender': gender,
+        'ageGroup': ageGroup,
+        'email': email,
+        'localId': userId,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      };
+
+      // Use a batch write to save user info and all scans atomically
+      final batch = firestore.batch();
+
+      // Set the user's personal information
+      batch.set(userDocRef, userInfo, SetOptions(merge: true));
+
+      // Add each scan record to a 'scan_history' subcollection
+      for (final scan in userScans) {
+        final scanDocRef = userDocRef.collection('scan_history').doc();
+        batch.set(scanDocRef, {
+          'result': scan.result,
+          'confidence': scan.confidence,
+          'imagePath': scan.imagePath, // Note: This will be a local path
+          'timestamp': scan.timestamp,
+        });
+      }
+
+      // Commit the batch
+      await batch.commit();
+
+      // --- UI Feedback and Navigation ---
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profile updated successfully!'),
+            content: Text('Profile and history saved successfully online!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -179,17 +212,25 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       }
     } catch (e) {
-      setState(() => isSaving = false);
+      _showErrorSnackBar('Error saving data: $e');
+    } finally {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving profile: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => isSaving = false);
       }
     }
   }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
 
   bool _isValidEmail(String email) {
     return RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
@@ -263,7 +304,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     (val) => setState(() => _selectedAgeGroup = val), isRequired: true),
                             const Divider(color: Colors.white30, thickness: 1),
                             _buildInputRow("Email", emailController,
-                                inputType: TextInputType.emailAddress),
+                                inputType: TextInputType.emailAddress, isRequired: true), // Email is now required
                             const Divider(color: Colors.white30, thickness: 1),
                             const SizedBox(height: 32),
                             Center(
@@ -464,7 +505,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _getHintText(String label) {
     switch (label.toLowerCase()) {
       case 'email':
-        return 'Enter your email (optional)';
+        return 'Enter your email (required)';
       case 'age':
         return 'Select your age group';
       case 'name':
