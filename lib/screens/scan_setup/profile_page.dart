@@ -157,25 +157,46 @@ class _ProfilePageState extends State<ProfilePage> {
       final firestore = FirebaseFirestore.instance;
       final userDocRef = firestore.collection('users').doc(email);
 
+      // Get all scan history for the user from the local db
+      final userScans = await database.getScansForUser(userId);
+
       // Prepare personal info data for Firestore
       final userInfo = {
         'name': name,
         'gender': gender,
         'ageGroup': ageGroup,
         'email': email,
-        'localId': userId,
+        'userId': userId,
         'lastUpdated': FieldValue.serverTimestamp(),
       };
 
+      // Use a batch write to save user info and all scans atomically
+      final batch = firestore.batch();
 
-      await userDocRef.set(userInfo, SetOptions(merge: true));
+      // Set the user's personal information
+      batch.set(userDocRef, userInfo, SetOptions(merge: true));
 
+      // Add each scan record to a 'scan_history' subcollection
+      for (final scan in userScans) {
+        final scanDocRef = userDocRef.collection('scan_history').doc();
+        batch.set(scanDocRef, {
+          'result': scan.result,
+          'confidence': scan.confidence,
+          'estimatedOpacityExtent': scan.estimatedOpacityExtent,
+          'estimatedOpacityDensity': scan.estimatedOpacityDensity,
+          'imagePath': scan.imagePath, // Note: This will be a local path
+          'timestamp': scan.timestamp,
+        });
+      }
+
+      // Commit the batch
+      await batch.commit();
 
       // --- UI Feedback and Navigation ---
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profile saved successfully online!'),
+            content: Text('Profile and history saved successfully online!'),
             backgroundColor: Colors.green,
           ),
         );
