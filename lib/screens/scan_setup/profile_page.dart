@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:a_eye/database/app_database.dart';
-
-// Import Cloud Firestore
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfilePage extends StatefulWidget {

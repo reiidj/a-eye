@@ -468,6 +468,28 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _estimatedOpacityExtentMeta =
+      const VerificationMeta('estimatedOpacityExtent');
+  @override
+  late final GeneratedColumn<double> estimatedOpacityExtent =
+      GeneratedColumn<double>(
+        'estimated_opacity_extent',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _estimatedOpacityDensityMeta =
+      const VerificationMeta('estimatedOpacityDensity');
+  @override
+  late final GeneratedColumn<double> estimatedOpacityDensity =
+      GeneratedColumn<double>(
+        'estimated_opacity_density',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -476,6 +498,8 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
     imagePath,
     timestamp,
     confidence,
+    estimatedOpacityExtent,
+    estimatedOpacityDensity,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -530,6 +554,24 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
     } else if (isInserting) {
       context.missing(_confidenceMeta);
     }
+    if (data.containsKey('estimated_opacity_extent')) {
+      context.handle(
+        _estimatedOpacityExtentMeta,
+        estimatedOpacityExtent.isAcceptableOrUnknown(
+          data['estimated_opacity_extent']!,
+          _estimatedOpacityExtentMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estimated_opacity_density')) {
+      context.handle(
+        _estimatedOpacityDensityMeta,
+        estimatedOpacityDensity.isAcceptableOrUnknown(
+          data['estimated_opacity_density']!,
+          _estimatedOpacityDensityMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -563,6 +605,14 @@ class $ScansTable extends Scans with TableInfo<$ScansTable, Scan> {
         DriftSqlType.double,
         data['${effectivePrefix}confidence'],
       )!,
+      estimatedOpacityExtent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}estimated_opacity_extent'],
+      ),
+      estimatedOpacityDensity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}estimated_opacity_density'],
+      ),
     );
   }
 
@@ -579,6 +629,8 @@ class Scan extends DataClass implements Insertable<Scan> {
   final String? imagePath;
   final DateTime timestamp;
   final double confidence;
+  final double? estimatedOpacityExtent;
+  final double? estimatedOpacityDensity;
   const Scan({
     required this.id,
     required this.userId,
@@ -586,6 +638,8 @@ class Scan extends DataClass implements Insertable<Scan> {
     this.imagePath,
     required this.timestamp,
     required this.confidence,
+    this.estimatedOpacityExtent,
+    this.estimatedOpacityDensity,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -598,6 +652,16 @@ class Scan extends DataClass implements Insertable<Scan> {
     }
     map['timestamp'] = Variable<DateTime>(timestamp);
     map['confidence'] = Variable<double>(confidence);
+    if (!nullToAbsent || estimatedOpacityExtent != null) {
+      map['estimated_opacity_extent'] = Variable<double>(
+        estimatedOpacityExtent,
+      );
+    }
+    if (!nullToAbsent || estimatedOpacityDensity != null) {
+      map['estimated_opacity_density'] = Variable<double>(
+        estimatedOpacityDensity,
+      );
+    }
     return map;
   }
 
@@ -611,6 +675,12 @@ class Scan extends DataClass implements Insertable<Scan> {
           : Value(imagePath),
       timestamp: Value(timestamp),
       confidence: Value(confidence),
+      estimatedOpacityExtent: estimatedOpacityExtent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(estimatedOpacityExtent),
+      estimatedOpacityDensity: estimatedOpacityDensity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(estimatedOpacityDensity),
     );
   }
 
@@ -626,6 +696,12 @@ class Scan extends DataClass implements Insertable<Scan> {
       imagePath: serializer.fromJson<String?>(json['imagePath']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       confidence: serializer.fromJson<double>(json['confidence']),
+      estimatedOpacityExtent: serializer.fromJson<double?>(
+        json['estimatedOpacityExtent'],
+      ),
+      estimatedOpacityDensity: serializer.fromJson<double?>(
+        json['estimatedOpacityDensity'],
+      ),
     );
   }
   @override
@@ -638,6 +714,12 @@ class Scan extends DataClass implements Insertable<Scan> {
       'imagePath': serializer.toJson<String?>(imagePath),
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'confidence': serializer.toJson<double>(confidence),
+      'estimatedOpacityExtent': serializer.toJson<double?>(
+        estimatedOpacityExtent,
+      ),
+      'estimatedOpacityDensity': serializer.toJson<double?>(
+        estimatedOpacityDensity,
+      ),
     };
   }
 
@@ -648,6 +730,8 @@ class Scan extends DataClass implements Insertable<Scan> {
     Value<String?> imagePath = const Value.absent(),
     DateTime? timestamp,
     double? confidence,
+    Value<double?> estimatedOpacityExtent = const Value.absent(),
+    Value<double?> estimatedOpacityDensity = const Value.absent(),
   }) => Scan(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -655,6 +739,12 @@ class Scan extends DataClass implements Insertable<Scan> {
     imagePath: imagePath.present ? imagePath.value : this.imagePath,
     timestamp: timestamp ?? this.timestamp,
     confidence: confidence ?? this.confidence,
+    estimatedOpacityExtent: estimatedOpacityExtent.present
+        ? estimatedOpacityExtent.value
+        : this.estimatedOpacityExtent,
+    estimatedOpacityDensity: estimatedOpacityDensity.present
+        ? estimatedOpacityDensity.value
+        : this.estimatedOpacityDensity,
   );
   Scan copyWithCompanion(ScansCompanion data) {
     return Scan(
@@ -666,6 +756,12 @@ class Scan extends DataClass implements Insertable<Scan> {
       confidence: data.confidence.present
           ? data.confidence.value
           : this.confidence,
+      estimatedOpacityExtent: data.estimatedOpacityExtent.present
+          ? data.estimatedOpacityExtent.value
+          : this.estimatedOpacityExtent,
+      estimatedOpacityDensity: data.estimatedOpacityDensity.present
+          ? data.estimatedOpacityDensity.value
+          : this.estimatedOpacityDensity,
     );
   }
 
@@ -677,14 +773,24 @@ class Scan extends DataClass implements Insertable<Scan> {
           ..write('result: $result, ')
           ..write('imagePath: $imagePath, ')
           ..write('timestamp: $timestamp, ')
-          ..write('confidence: $confidence')
+          ..write('confidence: $confidence, ')
+          ..write('estimatedOpacityExtent: $estimatedOpacityExtent, ')
+          ..write('estimatedOpacityDensity: $estimatedOpacityDensity')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, userId, result, imagePath, timestamp, confidence);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    result,
+    imagePath,
+    timestamp,
+    confidence,
+    estimatedOpacityExtent,
+    estimatedOpacityDensity,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -694,7 +800,9 @@ class Scan extends DataClass implements Insertable<Scan> {
           other.result == this.result &&
           other.imagePath == this.imagePath &&
           other.timestamp == this.timestamp &&
-          other.confidence == this.confidence);
+          other.confidence == this.confidence &&
+          other.estimatedOpacityExtent == this.estimatedOpacityExtent &&
+          other.estimatedOpacityDensity == this.estimatedOpacityDensity);
 }
 
 class ScansCompanion extends UpdateCompanion<Scan> {
@@ -704,6 +812,8 @@ class ScansCompanion extends UpdateCompanion<Scan> {
   final Value<String?> imagePath;
   final Value<DateTime> timestamp;
   final Value<double> confidence;
+  final Value<double?> estimatedOpacityExtent;
+  final Value<double?> estimatedOpacityDensity;
   const ScansCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -711,6 +821,8 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     this.imagePath = const Value.absent(),
     this.timestamp = const Value.absent(),
     this.confidence = const Value.absent(),
+    this.estimatedOpacityExtent = const Value.absent(),
+    this.estimatedOpacityDensity = const Value.absent(),
   });
   ScansCompanion.insert({
     this.id = const Value.absent(),
@@ -719,6 +831,8 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     this.imagePath = const Value.absent(),
     required DateTime timestamp,
     required double confidence,
+    this.estimatedOpacityExtent = const Value.absent(),
+    this.estimatedOpacityDensity = const Value.absent(),
   }) : userId = Value(userId),
        result = Value(result),
        timestamp = Value(timestamp),
@@ -730,6 +844,8 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     Expression<String>? imagePath,
     Expression<DateTime>? timestamp,
     Expression<double>? confidence,
+    Expression<double>? estimatedOpacityExtent,
+    Expression<double>? estimatedOpacityDensity,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -738,6 +854,10 @@ class ScansCompanion extends UpdateCompanion<Scan> {
       if (imagePath != null) 'image_path': imagePath,
       if (timestamp != null) 'timestamp': timestamp,
       if (confidence != null) 'confidence': confidence,
+      if (estimatedOpacityExtent != null)
+        'estimated_opacity_extent': estimatedOpacityExtent,
+      if (estimatedOpacityDensity != null)
+        'estimated_opacity_density': estimatedOpacityDensity,
     });
   }
 
@@ -748,6 +868,8 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     Value<String?>? imagePath,
     Value<DateTime>? timestamp,
     Value<double>? confidence,
+    Value<double?>? estimatedOpacityExtent,
+    Value<double?>? estimatedOpacityDensity,
   }) {
     return ScansCompanion(
       id: id ?? this.id,
@@ -756,6 +878,10 @@ class ScansCompanion extends UpdateCompanion<Scan> {
       imagePath: imagePath ?? this.imagePath,
       timestamp: timestamp ?? this.timestamp,
       confidence: confidence ?? this.confidence,
+      estimatedOpacityExtent:
+          estimatedOpacityExtent ?? this.estimatedOpacityExtent,
+      estimatedOpacityDensity:
+          estimatedOpacityDensity ?? this.estimatedOpacityDensity,
     );
   }
 
@@ -780,6 +906,16 @@ class ScansCompanion extends UpdateCompanion<Scan> {
     if (confidence.present) {
       map['confidence'] = Variable<double>(confidence.value);
     }
+    if (estimatedOpacityExtent.present) {
+      map['estimated_opacity_extent'] = Variable<double>(
+        estimatedOpacityExtent.value,
+      );
+    }
+    if (estimatedOpacityDensity.present) {
+      map['estimated_opacity_density'] = Variable<double>(
+        estimatedOpacityDensity.value,
+      );
+    }
     return map;
   }
 
@@ -791,7 +927,9 @@ class ScansCompanion extends UpdateCompanion<Scan> {
           ..write('result: $result, ')
           ..write('imagePath: $imagePath, ')
           ..write('timestamp: $timestamp, ')
-          ..write('confidence: $confidence')
+          ..write('confidence: $confidence, ')
+          ..write('estimatedOpacityExtent: $estimatedOpacityExtent, ')
+          ..write('estimatedOpacityDensity: $estimatedOpacityDensity')
           ..write(')'))
         .toString();
   }
@@ -1122,6 +1260,8 @@ typedef $$ScansTableCreateCompanionBuilder =
       Value<String?> imagePath,
       required DateTime timestamp,
       required double confidence,
+      Value<double?> estimatedOpacityExtent,
+      Value<double?> estimatedOpacityDensity,
     });
 typedef $$ScansTableUpdateCompanionBuilder =
     ScansCompanion Function({
@@ -1131,6 +1271,8 @@ typedef $$ScansTableUpdateCompanionBuilder =
       Value<String?> imagePath,
       Value<DateTime> timestamp,
       Value<double> confidence,
+      Value<double?> estimatedOpacityExtent,
+      Value<double?> estimatedOpacityDensity,
     });
 
 final class $$ScansTableReferences
@@ -1185,6 +1327,16 @@ class $$ScansTableFilterComposer extends Composer<_$AppDatabase, $ScansTable> {
 
   ColumnFilters<double> get confidence => $composableBuilder(
     column: $table.confidence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get estimatedOpacityExtent => $composableBuilder(
+    column: $table.estimatedOpacityExtent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get estimatedOpacityDensity => $composableBuilder(
+    column: $table.estimatedOpacityDensity,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1246,6 +1398,16 @@ class $$ScansTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get estimatedOpacityExtent => $composableBuilder(
+    column: $table.estimatedOpacityExtent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get estimatedOpacityDensity => $composableBuilder(
+    column: $table.estimatedOpacityDensity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -1293,6 +1455,16 @@ class $$ScansTableAnnotationComposer
 
   GeneratedColumn<double> get confidence => $composableBuilder(
     column: $table.confidence,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get estimatedOpacityExtent => $composableBuilder(
+    column: $table.estimatedOpacityExtent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get estimatedOpacityDensity => $composableBuilder(
+    column: $table.estimatedOpacityDensity,
     builder: (column) => column,
   );
 
@@ -1354,6 +1526,8 @@ class $$ScansTableTableManager
                 Value<String?> imagePath = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
                 Value<double> confidence = const Value.absent(),
+                Value<double?> estimatedOpacityExtent = const Value.absent(),
+                Value<double?> estimatedOpacityDensity = const Value.absent(),
               }) => ScansCompanion(
                 id: id,
                 userId: userId,
@@ -1361,6 +1535,8 @@ class $$ScansTableTableManager
                 imagePath: imagePath,
                 timestamp: timestamp,
                 confidence: confidence,
+                estimatedOpacityExtent: estimatedOpacityExtent,
+                estimatedOpacityDensity: estimatedOpacityDensity,
               ),
           createCompanionCallback:
               ({
@@ -1370,6 +1546,8 @@ class $$ScansTableTableManager
                 Value<String?> imagePath = const Value.absent(),
                 required DateTime timestamp,
                 required double confidence,
+                Value<double?> estimatedOpacityExtent = const Value.absent(),
+                Value<double?> estimatedOpacityDensity = const Value.absent(),
               }) => ScansCompanion.insert(
                 id: id,
                 userId: userId,
@@ -1377,6 +1555,8 @@ class $$ScansTableTableManager
                 imagePath: imagePath,
                 timestamp: timestamp,
                 confidence: confidence,
+                estimatedOpacityExtent: estimatedOpacityExtent,
+                estimatedOpacityDensity: estimatedOpacityDensity,
               ),
           withReferenceMapper: (p0) => p0
               .map(

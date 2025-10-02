@@ -25,22 +25,22 @@ class Scans extends Table {
   TextColumn get imagePath => text().nullable()();
   DateTimeColumn get timestamp => dateTime()();
   RealColumn get confidence => real()();
+  RealColumn get estimatedOpacityExtent => real().nullable()();
+  RealColumn get estimatedOpacityDensity => real().nullable()();
 }
 
 @DriftDatabase(tables: [Users, Scans])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
-  // --- FIX 1: Increment the schema version ---
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) {
       return m.createAll();
     },
-    // --- FIX 2: Add the migration logic for the 'scans' table ---
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
         // This migration adds the 'email' column to the 'users' table.
@@ -49,6 +49,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         // This migration adds the 'confidence' column to the 'scans' table.
         await m.addColumn(scans, scans.confidence);
+      }
+      if (from < 4) {
+        await m.addColumn(scans, scans.estimatedOpacityExtent);
+        await m.addColumn(scans, scans.estimatedOpacityDensity);
       }
     },
   );
