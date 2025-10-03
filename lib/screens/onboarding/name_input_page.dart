@@ -1,19 +1,15 @@
-import 'package:a_eye/database/app_database.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 class NameInputPage extends StatefulWidget {
   final void Function(String name) onNext;
-  final VoidCallback onBack;
-  final String? initialName;
+  final void Function() onBack;
 
   const NameInputPage({
     super.key,
     required this.onNext,
     required this.onBack,
-    this.initialName,
   });
 
   @override
@@ -21,32 +17,16 @@ class NameInputPage extends StatefulWidget {
 }
 
 class _NameInputPageState extends State<NameInputPage> {
-  final FocusNode _focusNode = FocusNode();
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.initialName != null) {
-      _controller.text = widget.initialName!;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
-    });
-  }
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   void dispose() {
-    _focusNode.dispose();
-    _controller.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Access the database instance using Provider
-    final database = Provider.of<AppDatabase>(context, listen: false);
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -142,8 +122,7 @@ class _NameInputPageState extends State<NameInputPage> {
                 ),
                 const SizedBox(height: 20),
                 TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
+                  controller: _nameController,
                   autofocus: true,
                   maxLength: 13,
                   style: const TextStyle(color: Colors.white),
@@ -195,42 +174,22 @@ class _NameInputPageState extends State<NameInputPage> {
                   ),
                 ),
                 ElevatedButton(
-                    onPressed: () async {
-                      final name = _controller.text.trim();
-                      if (name.isNotEmpty) {
-                        try {
-                          final user = UsersCompanion(
-                            name: drift.Value(name),
-                            gender: drift.Value(''),
-                            ageGroup: drift.Value(''),
-                            createdAt: drift.Value(DateTime.now()),
-                          );
-                          await database.insertUser(user);
-                          widget.onNext(name);
-                        } catch (e) {
-                          // Log the error for debugging
-                          print("Error inserting user: $e");
-                          // Show an error message to the user
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("An error occurred: $e"),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Please enter your name"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    },
+                  onPressed: () {
+                    if (_nameController.text.trim().isNotEmpty) {
+                      widget.onNext(_nameController.text.trim());
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Please enter your name"),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 63, vertical: 16),
+                        horizontal: 60, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

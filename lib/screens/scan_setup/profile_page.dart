@@ -1,8 +1,8 @@
+import 'package:a_eye/services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:drift/drift.dart' hide Column;
-import 'package:a_eye/database/app_database.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfilePage extends StatefulWidget {
   final VoidCallback onNext;
@@ -28,11 +28,9 @@ class _ProfilePageState extends State<ProfilePage> {
   bool isLoading = true;
   bool isSaving = false;
 
-  // Current user data
-  User? currentUser;
-
-  // Database instance
-  late AppDatabase database;
+  // Get current user from Firebase Auth
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+  final FirestoreService _firestoreService = FirestoreService();
 
   // Options for dropdowns
   final List<String> genderOptions = ["Male", "Female", "Other"];
@@ -46,203 +44,97 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    database = AppDatabase();
     _loadUserData();
   }
 
-  /// Load the latest user data from database
+  /// Load user data from Firestore
   Future<void> _loadUserData() async {
+    if (currentUser == null) {
+      setState(() => isLoading = false);
+      // Show an error if no user is logged in
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No user logged in.')),
+      );
+      return;
+    }
+
     try {
-      setState(() => isLoading = true);
+      final userDoc = await _firestoreService.getUser(currentUser!.uid);
 
-      final user = await database.getLatestUser();
-
-      if (user != null) {
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
         setState(() {
-          currentUser = user;
-          nameController.text = user.name;
-          _selectedGender = user.gender;
-          _selectedAgeGroup = user.ageGroup;
-          emailController.text = user.email ?? '';
+          nameController.text = userData['name'] ?? '';
+          _selectedGender = userData['gender'];
+          _selectedAgeGroup = userData['ageGroup'];
+          emailController.text = currentUser!.email ?? (userData['email'] ?? '');
           isLoading = false;
         });
       } else {
         setState(() => isLoading = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No user data found. Please complete onboarding first.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       }
     } catch (e) {
-      debugPrint('Error loading user data: $e');
       setState(() => isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading profile data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading profile data: $e')),
+      );
     }
   }
 
-  /// Save updated user data to the local database and to Firebase Firestore.
+  /// Save updated user data to Firestore
   Future<void> _saveUserData() async {
-    final String name = nameController.text.trim();
-    final String? gender = _selectedGender;
-    final String? ageGroup = _selectedAgeGroup;
-    final String email = emailController.text.trim();
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot save, no user is logged in.')),
+      );
+      return;
+    }
 
-    // --- Input Validation ---
-    if (name.isEmpty) {
-      _showErrorSnackBar('Name is required');
-      return;
-    }
-    if (gender == null) {
-      _showErrorSnackBar('Gender is required');
-      return;
-    }
-    if (ageGroup == null) {
-      _showErrorSnackBar('Age group is required');
-      return;
-    }
-    if (email.isEmpty) {
-      _showErrorSnackBar('Email is required to save data online');
-      return;
-    }
-    if (!_isValidEmail(email)) {
-      _showErrorSnackBar('Please enter a valid email address');
+    // Basic validation
+    if (nameController.text.trim().isEmpty || _selectedGender == null || _selectedAgeGroup == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields.')),
+      );
       return;
     }
 
     setState(() => isSaving = true);
 
     try {
-      // --- 1. Save to Local Database (Drift) ---
-      int userId;
-      if (currentUser != null) {
-        // Update existing user
-        final updatedUserCompanion = currentUser!.toCompanion(false).copyWith(
-              name: Value(name),
-              gender: Value(gender),
-              ageGroup: Value(ageGroup),
-              email: Value(email),
-            );
-        await database.updateUser(updatedUserCompanion);
-        userId = currentUser!.id;
-      } else {
-        // Insert new user
-        final newUser = UsersCompanion(
-          name: Value(name),
-          gender: Value(gender),
-          ageGroup: Value(ageGroup),
-          email: Value(email),
-          createdAt: Value(DateTime.now()),
-        );
-        userId = await database.insertUser(newUser);
-      }
-
-      // Refresh the current user state
-      final savedUser = await database.getUserById(userId);
-      if (savedUser == null) throw 'Failed to save user locally.';
-      setState(() => currentUser = savedUser);
-
-
-      // --- 2. Save to Online Database (Firestore) ---
-      final firestore = FirebaseFirestore.instance;
-      final userDocRef = firestore.collection('users').doc(email);
-
-      // Get all scan history for the user from the local db
-      final userScans = await database.getScansForUser(userId);
-
-      // Prepare personal info data for Firestore
-      final userInfo = {
-        'name': name,
-        'gender': gender,
-        'ageGroup': ageGroup,
-        'email': email,
-        'userId': userId,
-        'lastUpdated': FieldValue.serverTimestamp(),
+      final updatedData = {
+        'name': nameController.text.trim(),
+        'gender': _selectedGender,
+        'ageGroup': _selectedAgeGroup,
+        'email': emailController.text.trim(), // Saving email if you want
       };
 
-      // Use a batch write to save user info and all scans atomically
-      final batch = firestore.batch();
+      // We use the same 'addUser' method which also works for updating/overwriting data.
+      await _firestoreService.addUser(currentUser!.uid, updatedData);
 
-      // Set the user's personal information
-      batch.set(userDocRef, userInfo, SetOptions(merge: true));
+      setState(() => isSaving = false);
 
-      // Add each scan record to a 'scan_history' subcollection
-      for (final scan in userScans) {
-        final scanDocRef = userDocRef.collection('scan_history').doc();
-        batch.set(scanDocRef, {
-          'result': scan.result,
-          'confidence': scan.confidence,
-          'estimatedOpacityExtent': scan.estimatedOpacityExtent,
-          'estimatedOpacityDensity': scan.estimatedOpacityDensity,
-          'imagePath': scan.imagePath, // Note: This will be a local path
-          'timestamp': scan.timestamp,
-        });
-      }
-
-      // Commit the batch
-      await batch.commit();
-
-      // --- UI Feedback and Navigation ---
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile and history saved successfully online!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pushReplacementNamed(
-          context,
-          '/welcome',
-          arguments: {
-            'name': name,
-            'gender': gender,
-            'ageGroup': ageGroup,
-            'email': email,
-          },
-        );
-      }
-    } catch (e) {
-      _showErrorSnackBar('Error saving data: $e');
-    } finally {
-      if (mounted) {
-        setState(() => isSaving = false);
-      }
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Profile saved successfully!'), backgroundColor: Colors.green),
+      );
+
+      // Navigate back to welcome screen
+      Navigator.pushReplacementNamed(context, '/welcome');
+
+    } catch (e) {
+      setState(() => isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving profile: $e'), backgroundColor: Colors.red),
       );
     }
-  }
-
-
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
   }
 
   @override
   void dispose() {
     nameController.dispose();
     emailController.dispose();
-    database.close();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +196,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     (val) => setState(() => _selectedAgeGroup = val), isRequired: true),
                             const Divider(color: Colors.white30, thickness: 1),
                             _buildInputRow("Email", emailController,
-                                inputType: TextInputType.emailAddress, isRequired: true), // Email is now required
+                                inputType: TextInputType.emailAddress),
                             const Divider(color: Colors.white30, thickness: 1),
                             const SizedBox(height: 32),
                             Center(
@@ -377,6 +269,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // --- Helper Widgets (No backend logic, copied from old design) ---
+
   Widget _buildDropdownRow(
       String label,
       String? selectedValue,
@@ -442,7 +336,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Reusable row builder for text fields
   Widget _buildInputRow(
       String label,
       TextEditingController controller, {
@@ -505,7 +398,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _getHintText(String label) {
     switch (label.toLowerCase()) {
       case 'email':
-        return 'Enter your email (required)';
+        return 'Enter your email (optional)';
       case 'age':
         return 'Select your age group';
       case 'name':

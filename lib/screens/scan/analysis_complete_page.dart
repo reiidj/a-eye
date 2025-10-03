@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'package:a_eye/database/app_database.dart';
-import 'package:drift/drift.dart' as drift;
+import 'dart:io';
+import 'package:a_eye/screens/scan/results_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 class AnalyzedPage extends StatefulWidget {
   final double prediction;
@@ -23,51 +22,21 @@ class _AnalyzedPageState extends State<AnalyzedPage> {
   @override
   void initState() {
     super.initState();
-    _scheduleAnalysisCompletion();
-  }
-
-  void _scheduleAnalysisCompletion() {
-    Future.delayed(const Duration(seconds: 2), () async {
-      if (!mounted) return;
-
-      final database = Provider.of<AppDatabase>(context, listen: false);
-
-      // The image path should be passed via arguments from the crop page
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      final imagePath = args?['imagePath'] as String?;
-
-      // Get the most recent user to associate the scan with
-      final user = await database.getLatestUser();
-
-      if (user == null || imagePath == null) {
-        print("Error: Could not find user or image path to save scan.");
-        if (mounted) Navigator.pop(context);
-        return;
-      }
-
-      // Determine the result randomly (as in the original code)
-      final isMature = DateTime.now().millisecondsSinceEpoch % 2 == 0;
-      final resultTitle = isMature ? 'Mature Cataract' : 'Immature Cataract';
-
-      // Create a new scan record using Drift
-      final newScan = ScansCompanion(
-        userId: drift.Value(user.id),
-        result: drift.Value(resultTitle),
-        imagePath: drift.Value(imagePath),
-        timestamp: drift.Value(DateTime.now()),
-      );
-
-      // Insert the scan into the database
-      await database.insertScan(newScan);
-
-      // Navigate to the appropriate result page
+    // After a delay, navigate to the results page
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
+        final cataractType = widget.prediction > 0.5
+            ? CataractType.mature
+            : CataractType.immature;
+
         Navigator.pushReplacementNamed(
           context,
-          isMature ? '/mature' : '/immature',
+          '/results',
           arguments: {
-            'name': user.name,
-            'imagePath': imagePath,
+            'cataractType': cataractType,
+            'prediction': widget.prediction,
+            'imagePath': widget.imagePath,
+            // userName will be fetched on the results page itself if needed
           },
         );
       }
@@ -76,71 +45,50 @@ class _AnalyzedPageState extends State<AnalyzedPage> {
 
   @override
   Widget build(BuildContext context) {
-    // The UI of this page remains the same
+    // Get the screen size
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF161616),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          const SizedBox(height: 150),
-          SizedBox(
-            height: 360,
-            width: double.infinity,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                const Image(
-                  image: AssetImage('assets/images/Analyzing.png'),
-                  width: double.infinity,
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Display the captured image
+            Container(
+              width: screenWidth * 0.5,
+              height: screenWidth * 0.5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: FileImage(File(widget.imagePath)),
                   fit: BoxFit.cover,
                 ),
-                Positioned(
-                  bottom: 54,
-                  child: Text(
-                    "Analysis completed",
-                    style: GoogleFonts.urbanist(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF5244F3),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 45.0),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                "Early detection helps in treating cataracts more effectively.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.urbanist(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                border: Border.all(
+                  color: const Color(0xFF5244F3),
+                  width: 6,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 210),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Text(
-              "Results are generated in real-time. Please wait a moment while we process your results...",
-              textAlign: TextAlign.center,
+            const SizedBox(height: 40),
+            Text(
+              'Analysis Complete',
               style: GoogleFonts.urbanist(
-                fontSize: 16,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Text(
+              'Redirecting to results...',
+              style: GoogleFonts.urbanist(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

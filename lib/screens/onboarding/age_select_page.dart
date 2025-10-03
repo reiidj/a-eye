@@ -1,8 +1,9 @@
-import 'package:a_eye/database/app_database.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:a_eye/services/firestore_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AgeSelectPage extends StatefulWidget {
   final void Function(String ageGroup) onNext;
@@ -66,7 +67,9 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
 
   @override
   Widget build(BuildContext context) {
-    final database = Provider.of<AppDatabase>(context, listen: false);
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final userName = args['name'] as String;
+    final gender = args['gender'] as String;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -213,13 +216,32 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
                 ElevatedButton(
                   onPressed: () async {
                     if (selectedAgeGroup != null) {
-                      final user = await database.getLatestUser();
+                      // 3. Get the currently signed-in anonymous user
+                      final user = FirebaseAuth.instance.currentUser;
+
                       if (user != null) {
-                        final updatedUser = user.toCompanion(false).copyWith(
-                          ageGroup: drift.Value(selectedAgeGroup!),
-                        );
-                        await database.updateUser(updatedUser);
+                        // 4. Prepare the user data to be saved in Firestore
+                        final userData = {
+                          'name': userName,
+                          'gender': gender,
+                          'ageGroup': selectedAgeGroup,
+                          'createdAt': Timestamp.now(),
+                        };
+
+                        // 5. Use the FirestoreService to save the data
+                        await FirestoreService().addUser(user.uid, userData);
+
+                        // 6. Call the original onNext callback to navigate
                         widget.onNext(selectedAgeGroup!);
+
+                      } else {
+                        // Handle case where user isn't signed in
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Error: Could not find user."),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
                       }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(

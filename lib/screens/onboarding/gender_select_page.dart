@@ -1,5 +1,3 @@
-import 'package:a_eye/database/app_database.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -67,8 +65,6 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
 
   @override
   Widget build(BuildContext context) {
-    final database = Provider.of<AppDatabase>(context, listen: false);
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -210,22 +206,13 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
                     if (selectedGender != null) {
-                      // Get the most recent user
-                      final user = await database.getLatestUser();
-                      if (user != null) {
-                        // Create a companion to update the user record
-                        final updatedUser = user.toCompanion(false).copyWith(
-                          gender: drift.Value(selectedGender!),
-                        );
-                        await database.updateUser(updatedUser);
-                        widget.onNext(selectedGender!);
-                      }
+                      widget.onNext(selectedGender!);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("Please select your gender"),
+                          content: Text("Please select a gender"),
                           backgroundColor: Colors.redAccent,
                         ),
                       );
@@ -234,7 +221,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5244F3),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 63, vertical: 16),
+                        horizontal: 60, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

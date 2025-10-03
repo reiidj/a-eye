@@ -1,11 +1,13 @@
+// lib/screens/scan/analyzing_page.dart
+
 import 'dart:async';
+import 'dart:typed_data'; // Required for image bytes
+import 'package:a_eye/services/analysis_service.dart';
+import 'package:a_eye/screens/scan/results_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import 'package:a_eye/database/app_database.dart';
-import 'package:a_eye/services/analysis_service.dart';
-// Import the ResultsPage to access the CataractType enum
-import 'package:a_eye/screens/scan/results_page.dart';
+import 'package:a_eye/services/firestore_service.dart';
 
 class AnalyzingPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -31,6 +33,7 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       });
     });
 
+    // Run analysis after the first frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runAnalysisAndNavigate();
     });
@@ -42,60 +45,61 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
     super.dispose();
   }
 
-  /// The page's only responsibility: get arguments, call the service, and navigate.
   Future<void> _runAnalysisAndNavigate() async {
-    // Get the database instance from the provider
-    final database = Provider.of<AppDatabase>(context, listen: false);
-
     try {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args == null || args['imageBytes'] == null) {
-        print("Error: No image data provided.");
-        return;
+        throw Exception("No image data provided to analyzing page.");
       }
 
-      // Get the current user from the database
-      final currentUser = await database.getLatestUser();
-      final imagePath = args['imagePath'] as String? ?? '';
+      // We only need the image bytes and path from the arguments
+      final Uint8List imageBytes = args['imageBytes'];
+      final String imagePath = args['imagePath'] as String? ?? '';
 
-      // Call the service with all the required info
-      final result = await AnalysisService.analyzeImage(
-        imageBytes: args['imageBytes'],
+      // Create an instance of the service and run the analysis
+      final result = await AnalysisService().analyzeImageAndSave(
+        imageBytes: imageBytes,
         imagePath: imagePath,
-        currentUser: currentUser,
-        database: database,
       );
 
-      final userName = currentUser?.name ?? 'Guest';
+      // Fetch the user's name from Firestore for the results page
+      String userName = 'Guest';
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirestoreService().getUser(user.uid);
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
+          userName = userData['name'] ?? 'Guest';
+        }
+      }
 
-      // --- FIX: Convert the string classification to the CataractType enum ---
-      final cataractType = result.classification == 'Mature'
+      // Determine the CataractType enum from the classification string
+      final cataractType = result.classification.contains('Mature')
           ? CataractType.mature
           : CataractType.immature;
-      // --- END OF FIX ---
 
-      // Navigate to the single, unified results page with all necessary arguments.
-      Navigator.pushReplacementNamed(
-        context,
-        '/results', // The new unified route
-        arguments: {
-          // Pass the correct enum type now
-          'cataractType': cataractType,
-          'prediction': result.probability,
-          'imagePath': imagePath,
-          'userName': userName,
-        },
-      );
-
+      // Navigate to the results page with all the necessary data
+      if (mounted) {
+        Navigator.pushReplacementNamed(
+          context,
+          '/results',
+          arguments: {
+            'cataractType': cataractType,
+            'prediction': result.probability,
+            'imagePath': imagePath,
+            'userName': userName,
+          },
+        );
+      }
     } catch (e) {
-      print("An error occurred: $e");
-      // Optionally, navigate to an error page or show a dialog
+      print("An error occurred during analysis: $e");
+      // You could navigate to an error page here if you wanted
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // The build method does not need any changes
+    // The build method remains exactly the same
     return Scaffold(
       backgroundColor: const Color(0xFF161616),
       body: Column(
