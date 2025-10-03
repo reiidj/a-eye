@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'a-eye-26956.firebasestorage.app',
     measurementId: 'G-F3GDJJLGJM',
   );
+
 }
