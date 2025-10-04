@@ -14,25 +14,18 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // Controllers for editable fields
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
 
-  // Nullable strings to hold dropdown values
   String? _selectedGender;
   String? _selectedAgeGroup;
 
-  final double infoFontSize = 20;
-
-  // State management
   bool isLoading = true;
   bool isSaving = false;
 
-  // Get current user from Firebase Auth
   final User? currentUser = FirebaseAuth.instance.currentUser;
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Options for dropdowns
   final List<String> genderOptions = ["Male", "Female", "Other"];
   final List<String> ageGroupOptions = [
     "Under 20",
@@ -47,11 +40,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserData();
   }
 
-  /// Load user data from Firestore
   Future<void> _loadUserData() async {
     if (currentUser == null) {
       setState(() => isLoading = false);
-      // Show an error if no user is logged in
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No user logged in.')),
       );
@@ -81,7 +72,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// Save updated user data to Firestore
   Future<void> _saveUserData() async {
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,11 +80,10 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    // Basic validation
     if (nameController.text.trim().isEmpty ||
         _selectedGender == null ||
         _selectedAgeGroup == null ||
-        emailController.text.trim().isEmpty) { // <-- Email check added
+        emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields.')),
       );
@@ -108,10 +97,9 @@ class _ProfilePageState extends State<ProfilePage> {
         'name': nameController.text.trim(),
         'gender': _selectedGender,
         'ageGroup': _selectedAgeGroup,
-        'email': emailController.text.trim(), // Saving email if you want
+        'email': emailController.text.trim(),
       };
 
-      // We use the same 'addUser' method which also works for updating/overwriting data.
       await _firestoreService.addUser(currentUser!.uid, updatedData);
 
       setState(() => isSaving = false);
@@ -120,7 +108,6 @@ class _ProfilePageState extends State<ProfilePage> {
         const SnackBar(content: Text('Profile saved successfully!'), backgroundColor: Colors.green),
       );
 
-      // Navigate back to welcome screen
       Navigator.pushReplacementNamed(context, '/welcome');
 
     } catch (e) {
@@ -138,11 +125,13 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
@@ -157,52 +146,69 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           if (!isLoading)
-            SingleChildScrollView(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height,
-                child: Stack(
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.06,
+                  vertical: screenHeight * 0.02,
+                ),
+                child: Column(
                   children: [
-                    Align(
-                      alignment: Alignment.center,
-                      child: Container(
-                        margin: const EdgeInsets.fromLTRB(24, 150, 24, 24),
-                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF131A21),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Center(
-                                child: Text(
-                                  "User Information",
-                                  style: GoogleFonts.urbanist(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                    SizedBox(height: screenHeight * 0.02),
+                    SizedBox(
+                      height: screenWidth * 0.525,
+                      width: screenWidth * 0.525,
+                      child: Image.asset(
+                        'assets/images/AEYE Logo P6.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(
+                        screenWidth * 0.04,
+                        screenHeight * 0.025,
+                        screenWidth * 0.04,
+                        screenHeight * 0.025,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131A21),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Text(
+                              "User Information",
+                              style: GoogleFonts.urbanist(
+                                fontSize: screenWidth * 0.08,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
                             ),
-                            const Divider(color: Colors.white30, thickness: 1),
-                            _buildInputRow("Name", nameController,
-                                isRequired: true, maxLength: 15),
-                            const Divider(color: Colors.white30, thickness: 1),
-                            _buildDropdownRow("Gender", _selectedGender, genderOptions,
-                                    (val) => setState(() => _selectedGender = val), isRequired: true),
-                            const Divider(color: Colors.white30, thickness: 1),
-                            _buildDropdownRow("Age", _selectedAgeGroup, ageGroupOptions,
-                                    (val) => setState(() => _selectedAgeGroup = val), isRequired: true),
-                            const Divider(color: Colors.white30, thickness: 1),
-                            _buildInputRow("Email", emailController,
-                                inputType: TextInputType.emailAddress, isRequired: true),
-                            const Divider(color: Colors.white30, thickness: 1),
-                            const SizedBox(height: 32),
-                            Center(
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          const Divider(color: Colors.white30, thickness: 1),
+                          _buildInputRow("Name", nameController, screenWidth,
+                              isRequired: true, maxLength: 15),
+                          const Divider(color: Colors.white30, thickness: 1),
+                          _buildDropdownRow("Gender", _selectedGender, genderOptions,
+                                  (val) => setState(() => _selectedGender = val), screenWidth,
+                              isRequired: true),
+                          const Divider(color: Colors.white30, thickness: 1),
+                          _buildDropdownRow("Age", _selectedAgeGroup, ageGroupOptions,
+                                  (val) => setState(() => _selectedAgeGroup = val), screenWidth,
+                              isRequired: true),
+                          const Divider(color: Colors.white30, thickness: 1),
+                          _buildInputRow("Email", emailController, screenWidth,
+                              inputType: TextInputType.emailAddress, isRequired: true),
+                          const Divider(color: Colors.white30, thickness: 1),
+                          SizedBox(height: screenHeight * 0.04),
+                          Center(
+                            child: SizedBox(
+                              width: double.infinity,
                               child: OutlinedButton(
                                 onPressed: isSaving ? null : _saveUserData,
                                 style: OutlinedButton.styleFrom(
@@ -212,16 +218,18 @@ class _ProfilePageState extends State<ProfilePage> {
                                         : const Color(0xFF5244F3),
                                     width: 2,
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 35, vertical: 16),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.08,
+                                    vertical: screenHeight * 0.02,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(32)),
                                 ),
                                 child: isSaving
-                                    ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
+                                    ? SizedBox(
+                                  height: screenWidth * 0.05,
+                                  width: screenWidth * 0.05,
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: Colors.white,
                                   ),
@@ -229,31 +237,18 @@ class _ProfilePageState extends State<ProfilePage> {
                                     : Text(
                                   "Save My Data",
                                   style: GoogleFonts.urbanist(
-                                    fontSize: 18,
+                                    fontSize: screenWidth * 0.045,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 80),
-                        child: SizedBox(
-                          height: 210,
-                          width: 210,
-                          child: Image.asset(
-                            'assets/images/AEYE Logo P6.png',
-                            fit: BoxFit.cover,
                           ),
-                        ),
+                        ],
                       ),
                     ),
+                    SizedBox(height: screenHeight * 0.02),
                   ],
                 ),
               ),
@@ -272,17 +267,16 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // --- Helper Widgets (No backend logic, copied from old design) ---
-
   Widget _buildDropdownRow(
       String label,
       String? selectedValue,
       List<String> items,
-      ValueChanged<String?> onChanged, {
+      ValueChanged<String?> onChanged,
+      double screenWidth, {
         bool isRequired = false,
       }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.01),
       child: Row(
         children: [
           Expanded(
@@ -290,19 +284,21 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.urbanist(
-                    fontSize: infoFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF5244F3),
+                Flexible(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.urbanist(
+                      fontSize: screenWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF5244F3),
+                    ),
                   ),
                 ),
                 if (isRequired)
-                  const Text(
+                  Text(
                     ' *',
-                    style: TextStyle(color: Colors.red, fontSize: 16),
+                    style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.04),
                   ),
               ],
             ),
@@ -316,9 +312,16 @@ class _ProfilePageState extends State<ProfilePage> {
               underline: Container(),
               hint: Text(
                 _getHintText(label),
-                style: const TextStyle(color: Colors.white54),
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: screenWidth * 0.045,
+                ),
               ),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: Colors.white,
+                size: screenWidth * 0.06,
+              ),
               onChanged: onChanged,
               items: items.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
@@ -326,7 +329,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Text(
                     value,
                     style: GoogleFonts.urbanist(
-                      fontSize: infoFontSize,
+                      fontSize: screenWidth * 0.05,
                       color: Colors.white,
                     ),
                   ),
@@ -341,13 +344,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildInputRow(
       String label,
-      TextEditingController controller, {
+      TextEditingController controller,
+      double screenWidth, {
         TextInputType inputType = TextInputType.text,
         bool isRequired = false,
         int? maxLength,
       }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
       child: Row(
         children: [
           Expanded(
@@ -355,19 +359,21 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.urbanist(
-                    fontSize: infoFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF5244F3),
+                Flexible(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.urbanist(
+                      fontSize: screenWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF5244F3),
+                    ),
                   ),
                 ),
                 if (isRequired)
-                  const Text(
+                  Text(
                     ' *',
-                    style: TextStyle(color: Colors.red, fontSize: 16),
+                    style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.04),
                   ),
               ],
             ),
@@ -378,14 +384,17 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: controller,
               maxLength: maxLength,
               style: GoogleFonts.urbanist(
-                fontSize: infoFontSize,
+                fontSize: screenWidth * 0.05,
                 color: Colors.white,
               ),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: _getHintText(label),
-                hintStyle: const TextStyle(color: Colors.white54),
+                hintStyle: TextStyle(
+                  color: Colors.white54,
+                  fontSize: screenWidth * 0.045,
+                ),
                 counterText: "",
               ),
               keyboardType: inputType,

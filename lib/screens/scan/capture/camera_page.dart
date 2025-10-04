@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:a_eye/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -66,12 +65,11 @@ class _CameraPageState extends State<CameraPage> {
       final XFile image = await _controller!.takePicture();
       final file = File(image.path);
 
-      // Compress/resize before sending
       final compressed = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
         "${file.parent.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg",
         quality: 85,
-        minWidth: 1024, // safe for validation
+        minWidth: 1024,
         minHeight: 1024,
       );
 
@@ -121,6 +119,9 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
       body: Stack(
@@ -128,7 +129,7 @@ class _CameraPageState extends State<CameraPage> {
           Column(
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height * 0.6,
+                height: screenHeight * 0.6,
                 width: double.infinity,
                 child: Stack(
                   children: [
@@ -145,13 +146,13 @@ class _CameraPageState extends State<CameraPage> {
                                 'Look at the camera lens',
                                 style: GoogleFonts.urbanist(
                                   color: Colors.white,
-                                  fontSize: 24,
+                                  fontSize: screenWidth * 0.06,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               SizedBox(
-                                width: 400,
-                                height: 400,
+                                width: screenWidth,
+                                height: screenWidth,
                                 child: CustomPaint(painter: CrosshairPainter()),
                               ),
                             ],
@@ -160,10 +161,10 @@ class _CameraPageState extends State<CameraPage> {
                       ),
                     ),
                     Positioned(
-                      bottom: 20,
+                      bottom: screenHeight * 0.025,
                       left: 0,
                       right: 0,
-                      child: Center(child: _buildEyeSelector()),
+                      child: Center(child: _buildEyeSelector(screenWidth)),
                     ),
                   ],
                 ),
@@ -178,14 +179,21 @@ class _CameraPageState extends State<CameraPage> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(right: 30.0, bottom: 12),
+                            padding: EdgeInsets.only(
+                              right: screenWidth * 0.075,
+                              bottom: screenHeight * 0.015,
+                            ),
                             child: FloatingActionButton(
                               heroTag: 'flip',
                               elevation: 0,
                               highlightElevation: 0,
                               backgroundColor: const Color(0xFF131A21),
                               onPressed: _flipCamera,
-                              child: const Icon(Icons.cameraswitch_outlined, color: Color(0xFF5244F3)),
+                              child: Icon(
+                                Icons.cameraswitch_outlined,
+                                color: const Color(0xFF5244F3),
+                                size: screenWidth * 0.08,
+                              ),
                             ),
                           ),
                         ],
@@ -193,15 +201,18 @@ class _CameraPageState extends State<CameraPage> {
                       GestureDetector(
                         onTap: _takePicture,
                         child: Container(
-                          width: 112,
-                          height: 112,
+                          width: screenWidth * 0.28,
+                          height: screenWidth * 0.28,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFF5244F3), width: 12),
+                            border: Border.all(
+                              color: const Color(0xFF5244F3),
+                              width: screenWidth * 0.03,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: screenHeight * 0.05),
                     ],
                   ),
                 ),
@@ -240,7 +251,7 @@ class _CameraPageState extends State<CameraPage> {
     );
   }
 
-  Widget _buildEyeSelector() {
+  Widget _buildEyeSelector(double screenWidth) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.4),
@@ -248,18 +259,21 @@ class _CameraPageState extends State<CameraPage> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [_eyeButton('Left'), _eyeButton('Right')],
+        children: [_eyeButton('Left', screenWidth), _eyeButton('Right', screenWidth)],
       ),
     );
   }
 
-  Widget _eyeButton(String label) {
+  Widget _eyeButton(String label, double screenWidth) {
     final bool isSelected = _selectedEye == label;
     return GestureDetector(
       onTap: () => setState(() => _selectedEye = label),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.07,
+          vertical: screenWidth * 0.01,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF5244F3) : Colors.transparent,
           borderRadius: BorderRadius.horizontal(
@@ -269,7 +283,11 @@ class _CameraPageState extends State<CameraPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.urbanist(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          style: GoogleFonts.urbanist(
+            color: Colors.white,
+            fontSize: screenWidth * 0.055,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
