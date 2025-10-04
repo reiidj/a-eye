@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:a_eye/services/firestore_service.dart';
 import 'package:a_eye/services/api_service.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class AnalyzingPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -53,13 +54,32 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       final Uint8List imageBytes = args['imageBytes'];
       final String imagePath = args['imagePath'] as String? ?? '';
 
-      // 2. Create an instance of the new ApiService and classify the image
+      // Step 3: resize/compress before sending to API
+      final Uint8List resizedBytes = await FlutterImageCompress.compressWithList(
+        imageBytes,
+        minWidth: 1024,
+        minHeight: 1024,
+        quality: 85,
+      );
+
+      // 2. Create an instance of the new ApiService and classify the resized image
       final ApiService apiService = ApiService();
-      final Map<String, dynamic> result = await apiService.classifyImage(imageBytes);
+      final mimeType = "image/jpeg"; // hardcoded, or detect dynamically with lookupMimeType
+      final result = await apiService.classifyImageBytes(
+        resizedBytes,
+        imagePath.split('/').last,
+        mimeType,
+      );
+
+      if (result['error'] != null) {
+        print("API returned error: ${result['error']}");
+        // TODO: show error to user
+        return;
+      }
 
       final String classification = result['classification'];
       final double confidence = result['confidence'];
-      // final String explanation = result['explanation']; // You can use this later
+      final String explanation = result['explanation']; // optional
 
       // 3. Save the result from the API to Firestore
       final user = FirebaseAuth.instance.currentUser;
@@ -68,13 +88,10 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
           'result': classification,
           'confidence': confidence,
           'timestamp': Timestamp.now(),
-          'imagePath': imagePath, // In a real app, upload to Firebase Storage and save URL
+          'imagePath': imagePath, // in real app, upload to Firebase Storage and save URL
         };
-        // Use your existing FirestoreService to save the data
         await FirestoreService().addScan(user.uid, scanData);
       }
-
-      // --- The rest of the logic remains mostly the same ---
 
       String userName = 'Guest';
       if (user != null) {
@@ -101,12 +118,10 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
           },
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       print("An error occurred during analysis: $e");
-      // Optional: Navigate to an error page to inform the user
-      // if (mounted) {
-      //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ErrorPage(message: e.toString())));
-      // }
+      print(st);
+      // Optionally navigate to error page
     }
   }
 

@@ -28,16 +28,13 @@ class _SelectPageState extends State<SelectPage> {
       });
 
       final ApiService apiService = ApiService();
-      final Uint8List imageBytes = await image.readAsBytes();
-
-      // Call the new API for validation
-      final validationResult = await apiService.validateImage(imageBytes);
+      final validationResult = await apiService.validateImage(image.path);
 
       setState(() {
         _isLoading = false; // Hide loading indicator
       });
 
-      if (mounted) { // Check if the widget is still in the tree
+      if (mounted) {
         if (validationResult['isValid'] == true) {
           // Image is valid, proceed to the cropping page
           Navigator.push(
@@ -47,7 +44,7 @@ class _SelectPageState extends State<SelectPage> {
             ),
           );
         } else {
-          // Image is invalid, show the invalid page with the reason from the server
+          // Image is invalid, show the invalid page
           Navigator.push(
             context,
             MaterialPageRoute(

@@ -4,6 +4,7 @@ import 'package:a_eye/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
@@ -37,7 +38,7 @@ class _CameraPageState extends State<CameraPage> {
       }
       _controller = CameraController(
         _availableCameras[_selectedCameraIndex],
-        ResolutionPreset.veryHigh,
+        ResolutionPreset.medium,
         enableAudio: false,
       );
       _initializeControllerFuture = _controller!.initialize().then((_) {
@@ -58,17 +59,24 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Future<void> _takePicture() async {
-    if (_controller == null || !_controller!.value.isInitialized || _isProcessing) {
-      return;
-    }
+    if (_controller == null || !_controller!.value.isInitialized || _isProcessing) return;
     setState(() => _isProcessing = true);
 
     try {
       final XFile image = await _controller!.takePicture();
-      final Uint8List imageBytes = await image.readAsBytes();
+      final file = File(image.path);
 
-      final ApiService apiService = ApiService();
-      final validationResult = await apiService.validateImage(imageBytes);
+      // Compress/resize before sending
+      final compressed = await FlutterImageCompress.compressAndGetFile(
+        file.absolute.path,
+        "${file.parent.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg",
+        quality: 85,
+        minWidth: 1024, // safe for validation
+        minHeight: 1024,
+      );
+
+      final apiService = ApiService();
+      final validationResult = await apiService.validateImage(compressed!.path);
 
       if (!mounted) return;
 
@@ -76,20 +84,25 @@ class _CameraPageState extends State<CameraPage> {
         Navigator.pushNamed(
           context,
           '/crop',
-          arguments: {'imagePath': image.path, 'selectedEye': _selectedEye},
+          arguments: {
+            'imagePath': compressed.path,
+            'selectedEye': _selectedEye,
+          },
         );
       } else {
         Navigator.pushNamed(
           context,
           '/invalid',
           arguments: {
-            'imagePath': image.path,
+            'imagePath': compressed.path,
             'selectedEye': _selectedEye,
             'reason': validationResult['reason'],
           },
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      print('[Camera] Capture or validation failed: $e');
+      print(st);
       if (mounted) setState(() => _errorMessage = 'Capture or validation failed: $e');
     } finally {
       if (mounted) setState(() => _isProcessing = false);
