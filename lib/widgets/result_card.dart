@@ -37,7 +37,9 @@ class ResultCard extends StatelessWidget {
       fit: BoxFit.cover,
     );
 
-    final bool isMature = title == 'Mature';
+    // FIX: Check if title is "Mature Cataract" specifically (not "Immature")
+    final bool isMature = title.toLowerCase().contains('mature') &&
+        !title.toLowerCase().contains('immature');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,13 +79,11 @@ class ResultCard extends StatelessWidget {
                       style: GoogleFonts.urbanist(fontSize: 15, color: Colors.grey[300]),
                     ),
                     const SizedBox(height: 4),
-                    // --- FIX START ---
-                    // Appended " Cataract" to the title string
+                    // FIX: Display title as-is without appending "Cataract"
                     Text(
-                      '$title Cataract',
+                      title,
                       style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
-                    // --- FIX END ---
                     if (isMature)
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),

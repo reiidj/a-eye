@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:a_eye/screens/scan/results_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import for Timestamp
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:a_eye/services/firestore_service.dart';
 import 'package:a_eye/services/api_service.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class AnalyzingPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -60,57 +59,70 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       // 3. Handle the response
       if (result.containsKey('error')) {
         // --- ERROR PATH ---
-        // If the API returns an error, show it and stop.
         final String errorMessage = result['error'] ?? 'An unknown analysis error occurred.';
         print("Error during analysis: $errorMessage");
 
         if (mounted) {
-          // Optional: Navigate to an invalid/error page
           Navigator.pushReplacementNamed(
             context,
-            '/uploadInvalid', // Or your generic invalid page
+            '/uploadInvalid',
             arguments: {'reason': errorMessage, 'imagePath': imagePath},
           );
         }
 
       } else {
         // --- SUCCESS PATH ---
-        // If the API call is successful, proceed.
-
-        // 4. Extract the correct data from the result
+        // 4. Extract the data from the result
         final String classification = result['classification'];
-        final String confidence = result['confidencePercentage']; // Use the correct key
+        final String confidence = result['confidencePercentage'];
 
-        // 5. Save the CORRECT data to Firestore
+        // 5. Save data to Firestore FIRST (before navigating)
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           final scanData = {
-            'result': classification,      // e.g., "Mature Cataract"
-            'confidence': confidence,      // e.g., "98.76%"
-            'timestamp': Timestamp.now(),  // The current time
-            'imagePath': imagePath,        // The local path of the image
+            'result': classification,
+            'confidence': confidence,
+            'timestamp': Timestamp.now(),
+            'imagePath': imagePath,
           };
-          // This now saves the correct "Mature" result before you see the history page.
           await FirestoreService().addScan(user.uid, scanData);
         }
 
-        // 6. Navigate to the ResultsPage with the complete, correct data
-        if (mounted) {
-          // We add the userName here so the results page can display it
-          String userName = 'Guest';
-          if (user != null) {
-            final userDoc = await FirestoreService().getUser(user.uid);
-            if (userDoc.exists) {
-              final userData = userDoc.data() as Map<String, dynamic>;
-              userName = userData['name'] ?? 'Guest';
-            }
+        // 6. Get userName
+        String userName = 'Guest';
+        if (user != null) {
+          final userDoc = await FirestoreService().getUser(user.uid);
+          if (userDoc.exists) {
+            final userData = userDoc.data() as Map<String, dynamic>;
+            userName = userData['name'] ?? 'Guest';
           }
-          result['userName'] = userName;
+        }
 
-          Navigator.pushReplacementNamed(
+        // 7. Convert classification string to CataractType enum
+        // CRITICAL: This is where the bug was - proper conversion needed!
+        CataractType cataractType;
+        if (classification.toLowerCase().contains('mature') &&
+            !classification.toLowerCase().contains('immature')) {
+          cataractType = CataractType.mature;
+          print("DEBUG: Classification '$classification' converted to CataractType.mature");
+        } else {
+          cataractType = CataractType.immature;
+          print("DEBUG: Classification '$classification' converted to CataractType.immature");
+        }
+
+        // 8. Navigate to ResultsPage with properly constructed object
+        if (mounted) {
+          Navigator.pushReplacement(
             context,
-            '/results',
-            arguments: result, // Pass the entire successful result map
+            MaterialPageRoute(
+              builder: (context) => ResultsPage(
+                userName: userName,
+                confidence: confidence,
+                explainedImageBase64: result['explained_image_base64'] ?? '',
+                explanationText: result['explanation'] ?? '',
+                cataractType: cataractType,
+              ),
+            ),
           );
         }
       }
@@ -118,15 +130,17 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       print("A critical error occurred in _runAnalysisAndNavigate: $e");
       print(st);
       if (mounted) {
-        // Handle unexpected errors (e.g., failed to get arguments)
-        Navigator.pushReplacementNamed(context, '/uploadInvalid', arguments: {'reason': 'A critical error occurred.'});
+        Navigator.pushReplacementNamed(
+            context,
+            '/uploadInvalid',
+            arguments: {'reason': 'A critical error occurred.'}
+        );
       }
     }
   }
-// pass etc etc to firebase
+
   @override
   Widget build(BuildContext context) {
-    // The build method does not need to change.
     return Scaffold(
       backgroundColor: const Color(0xFF161616),
       body: Column(

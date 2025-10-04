@@ -2,11 +2,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'package:a_eye/services/pdf_builder.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'dart:typed_data';
+// firebase
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:a_eye/services/firestore_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 enum CataractType { immature, mature }
 
@@ -26,7 +32,6 @@ class ResultsPage extends StatelessWidget {
     required this.cataractType,
   }) : super(key: key);
 
-  // ... (Your existing getters and build method can remain the same)
   String get _title => cataractType == CataractType.mature ? "Mature Cataract Detected" : "Immature Cataract Detected";
   String get _description {
     return cataractType == CataractType.mature
@@ -34,83 +39,6 @@ class ResultsPage extends StatelessWidget {
         : "The uploaded eye image exhibits characteristics consistent with an immature cataract. Constant monitoring of cataract is advisable. You can opt for surgical removal if it affects your daily life.";
   }
 
-  /// --- THIS FUNCTION HAS BEEN UPDATED TO WORK WITH MODERN ANDROID ---
-  Future<void> _savePdf(BuildContext context) async {
-    // 1. Request storage permission (still good practice for backward compatibility)
-    final status = await Permission.storage.request();
-
-    // 2. Handle the permission result
-    if (status.isGranted) {
-      try {
-        // --- START OF CHANGES ---
-        // Get the external storage directory in a more reliable way
-        final directory = await getExternalStorageDirectory();
-        if (directory == null) {
-          throw Exception("Could not find the external storage directory.");
-        }
-
-        // Construct the path to the Downloads folder
-        final downloadsDirectoryPath = '${directory.path}/Download';
-        // --- END OF CHANGES ---
-
-        final downloadsDir = Directory(downloadsDirectoryPath);
-        if (!await downloadsDir.exists()) {
-          await downloadsDir.create(recursive: true);
-        }
-
-        // Generate the PDF from your builder
-        final pdfBytes = await generateReportPdf(
-          userName: userName,
-          classification: cataractType == CataractType.mature ? "Mature Cataract" : "Immature Cataract",
-          confidence: confidence,
-          explanationText: explanationText,
-        );
-
-        // Create the file and write the data
-        final fileName = 'A-EYE_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-        final filePath = '${downloadsDir.path}/$fileName';
-        final file = File(filePath);
-        await file.writeAsBytes(pdfBytes);
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Report saved to: $filePath')), // Shows the full path
-          );
-        }
-      } catch (e) {
-        print("Error saving PDF: $e");
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save report.')),
-          );
-        }
-      }
-    } else if (status.isPermanentlyDenied) {
-      // --- Permission was permanently denied ---
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Permission Required'),
-            content: const Text('Storage permission is permanently denied. Please go to your app settings to enable it.'),
-            actions: [
-              TextButton(child: const Text('Cancel'), onPressed: () => Navigator.pop(context)),
-              TextButton(child: const Text('Open Settings'), onPressed: () => openAppSettings()),
-            ],
-          ),
-        );
-      }
-    } else {
-      // --- Permission was denied ---
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Storage permission is required to save the report.')),
-        );
-      }
-    }
-  }
-
-  // Just ensure the _buildConfirmExitButton(context) is called at the end.
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -120,7 +48,6 @@ class ResultsPage extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Background
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -133,13 +60,12 @@ class ResultsPage extends StatelessWidget {
           ),
           Column(
             children: [
-              // Top bar
               Container(
                 width: double.infinity,
                 height: screenHeight * 0.1149,
                 color: const Color(0xFF131A21),
                 alignment: Alignment.center,
-                child: Padding( // Added padding for better alignment
+                child: Padding(
                   padding: const EdgeInsets.only(top: 24.0),
                   child: Text(
                     "Eye Health Report",
@@ -152,7 +78,6 @@ class ResultsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // Scrollable content
               Expanded(
                 child: MediaQuery.removePadding(
                   context: context,
@@ -162,13 +87,10 @@ class ResultsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Main diagnosis box
                         _buildDiagnosisBox(screenWidth, explainedImageBase64),
                         SizedBox(height: cataractType == CataractType.immature ? 32 : 16),
-                        // Medical disclaimer
                         _buildMedicalDisclaimer(),
                         SizedBox(height: cataractType == CataractType.immature ? 32 : 16),
-                        // Action buttons
                         _buildActionButtons(context),
                       ],
                     ),
@@ -182,19 +104,14 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
-
-  // --- New Helper Function to Save the PDF ---
   Future<void> _savePdfToDownloads(BuildContext context) async {
-    // 1. Request storage permission
     final status = await Permission.storage.request();
 
     if (status.isGranted) {
       try {
-        // 2. Get the Downloads directory
-        // Note: For iOS, this saves to the app's documents directory, which is standard practice.
         final directory = await getApplicationDocumentsDirectory();
         final downloadsDirectoryPath = Platform.isAndroid
-            ? '/storage/emulated/0/Download' // Standard Android Downloads folder
+            ? '/storage/emulated/0/Download'
             : directory.path;
 
         final downloadsDir = Directory(downloadsDirectoryPath);
@@ -202,7 +119,6 @@ class ResultsPage extends StatelessWidget {
           await downloadsDir.create(recursive: true);
         }
 
-        // 3. Generate PDF bytes
         final pdfBytes = await generateReportPdf(
           userName: userName,
           classification: cataractType == CataractType.mature ? "Mature Cataract" : "Immature Cataract",
@@ -210,40 +126,33 @@ class ResultsPage extends StatelessWidget {
           explanationText: explanationText,
         );
 
-        // 4. Create the file path and save the file
         final fileName = 'A-EYE_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
         final filePath = '${downloadsDir.path}/$fileName';
         final file = File(filePath);
         await file.writeAsBytes(pdfBytes);
 
-        // 5. Show success message
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Report saved to Downloads folder!')),
+            const SnackBar(content: Text('Report saved to Downloads folder!')),
           );
         }
-
       } catch (e) {
         print("Error saving PDF: $e");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save report.')),
+            const SnackBar(content: Text('Failed to save report.')),
           );
         }
       }
     } else if (status.isDenied || status.isPermanentlyDenied) {
-      // Handle permission denied
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Storage permission is required to save the report.')),
         );
-        // Optional: Open app settings to let the user enable the permission
-        // openAppSettings();
       }
     }
   }
 
-  // --- Replace your _buildConfirmExitButton with this ---
   Widget _buildConfirmExitButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -254,10 +163,59 @@ class ResultsPage extends StatelessWidget {
           style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
         ),
         onPressed: () async {
-          // 1. Call our new save function
+          // Show a loading indicator
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Saving result...')),
+          );
+
+          // 1. Save the PDF locally
           await _savePdfToDownloads(context);
 
-          // 2. After saving, navigate away
+          // 2. Upload Image and Save Data to Firestore
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              // --- START: NEW IMAGE UPLOAD LOGIC ---
+              // Convert base64 string to image data
+              final Uint8List imageBytes = base64Decode(explainedImageBase64);
+              final String imageName = 'scan_${DateTime.now().millisecondsSinceEpoch}.png';
+
+              // Create a reference to Firebase Storage
+              final Reference storageRef = FirebaseStorage.instance
+                  .ref()
+                  .child('scans/${user.uid}/$imageName');
+
+              // Upload the data
+              final uploadTask = storageRef.putData(imageBytes);
+              final snapshot = await uploadTask.whenComplete(() => {});
+
+              // Get the public URL
+              final String imageUrl = await snapshot.ref.getDownloadURL();
+              // --- END: NEW IMAGE UPLOAD LOGIC ---
+
+              final firestoreService = FirestoreService();
+              final classification = cataractType == CataractType.mature ? "Mature Cataract" : "Immature Cataract";
+
+              // Prepare the data with the new image URL
+              final scanData = {
+                'result': classification,
+                'confidence': confidence,
+                'timestamp': FieldValue.serverTimestamp(),
+                'imagePath': imageUrl, // Use the new URL here
+              };
+
+              await firestoreService.addScan(user.uid, scanData);
+            }
+          } catch (e) {
+            print("Error saving to Firestore or Storage: $e");
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Could not save result to your history.')),
+              );
+            }
+          }
+
+          // 3. Navigate away
           if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -275,6 +233,8 @@ class ResultsPage extends StatelessWidget {
       ),
     );
   }
+
+
   Widget _buildDiagnosisBox(double screenWidth, String explainedImageBase64) {
     return Container(
       width: double.infinity,
@@ -290,24 +250,20 @@ class ResultsPage extends StatelessWidget {
           const SizedBox(height: 12),
           _buildDescriptionText(),
           const SizedBox(height: 16),
-          // Pass the base64 string to the updated _buildEyeImage widget
           _buildEyeImage(screenWidth, explainedImageBase64),
         ],
       ),
     );
   }
 
-// This widget now correctly handles the base64 string.
   Widget _buildEyeImage(double screenWidth, String explainedImageBase64) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(15.0),
-      // Decode the base64 string and display the image from memory
       child: Image.memory(
         base64Decode(explainedImageBase64),
         width: screenWidth * 0.5,
         height: screenWidth * 0.5,
         fit: BoxFit.cover,
-        // Add a fallback in case the string is empty for some reason
         errorBuilder: (context, error, stackTrace) {
           return Container(
             width: screenWidth * 0.5,
@@ -518,7 +474,4 @@ class ResultsPage extends StatelessWidget {
       return _buildConfirmExitButton(context);
     }
   }
-
-
 }
-

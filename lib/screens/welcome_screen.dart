@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 class WelcomeScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onProfile;
-  final String? userName;
+  final String? userName; // This is now optional
   final VoidCallback onGuide;
 
   const WelcomeScreen({
@@ -265,10 +265,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             itemBuilder: (context, index) {
               final scanData = scans[index].data() as Map<String, dynamic>;
               final timestamp = (scanData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+              final result = scanData['result'] ?? 'No Result';
+
+              // DEBUG: Print the exact result value
+              print('DEBUG - Scan $index result: "$result"');
+              print('DEBUG - Result type: ${result.runtimeType}');
+              print('DEBUG - Contains "mature": ${result.toString().toLowerCase().contains('mature')}');
+              print('DEBUG - Contains "immature": ${result.toString().toLowerCase().contains('immature')}');
 
               return ResultCard(
                 date: DateFormat('MMMM d, y, h:mm a').format(timestamp),
-                title: scanData['result'] ?? 'No Result',
+                title: result,
                 imageFilePath: scanData['imagePath'] as String? ?? '',
                 showLabel: index == 0,
               );
