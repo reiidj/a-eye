@@ -20,24 +20,29 @@ class ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     final imageWidget = imageFilePath != null
         ? Image.file(
       File(imageFilePath!),
-      width: 80,
-      height: 80,
+      width: screenWidth * 0.2,
+      height: screenWidth * 0.2,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
-        return const Icon(Icons.broken_image, size: 80, color: Colors.white30);
+        return Icon(
+          Icons.broken_image,
+          size: screenWidth * 0.2,
+          color: Colors.white30,
+        );
       },
     )
         : Image.asset(
       imageAsset ?? 'assets/images/placeholder.png',
-      width: 80,
-      height: 80,
+      width: screenWidth * 0.2,
+      height: screenWidth * 0.2,
       fit: BoxFit.cover,
     );
 
-    // FIX: Check if title is "Mature Cataract" specifically (not "Immature")
     final bool isMature = title.toLowerCase().contains('mature') &&
         !title.toLowerCase().contains('immature');
 
@@ -46,18 +51,18 @@ class ResultCard extends StatelessWidget {
       children: [
         if (showLabel)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.only(bottom: screenWidth * 0.02),
             child: Text(
               "Most Recent",
               style: GoogleFonts.urbanist(
-                fontSize: 15,
+                fontSize: screenWidth * 0.0375,
                 color: Colors.white,
               ),
             ),
           ),
         Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          margin: EdgeInsets.only(bottom: screenWidth * 0.03),
+          padding: EdgeInsets.all(screenWidth * 0.04),
           decoration: BoxDecoration(
             color: const Color(0xFF242443),
             borderRadius: BorderRadius.circular(24),
@@ -69,27 +74,36 @@ class ResultCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: imageWidget,
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: screenWidth * 0.04),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       date,
-                      style: GoogleFonts.urbanist(fontSize: 15, color: Colors.grey[300]),
+                      style: GoogleFonts.urbanist(
+                        fontSize: screenWidth * 0.0375,
+                        color: Colors.grey[300],
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    // FIX: Display title as-is without appending "Cataract"
+                    SizedBox(height: screenWidth * 0.01),
                     Text(
                       title,
-                      style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+                      style: GoogleFonts.urbanist(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                     if (isMature)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
+                        padding: EdgeInsets.only(top: screenWidth * 0.02),
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.03,
+                            vertical: screenWidth * 0.02,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0x26FF6767),
                             borderRadius: BorderRadius.circular(16),
@@ -97,13 +111,17 @@ class ResultCard extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              const Icon(Icons.warning_rounded, color: Colors.red, size: 20),
-                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.warning_rounded,
+                                color: Colors.red,
+                                size: screenWidth * 0.05,
+                              ),
+                              SizedBox(width: screenWidth * 0.02),
                               Expanded(
                                 child: Text(
                                   "Please consult now with an eye doctor.",
                                   style: GoogleFonts.urbanist(
-                                    fontSize: 14,
+                                    fontSize: screenWidth * 0.035,
                                     color: const Color(0xFFDD0000),
                                     fontWeight: FontWeight.bold,
                                   ),

@@ -66,32 +66,36 @@ class ResultsPage extends StatelessWidget {
                 color: const Color(0xFF131A21),
                 alignment: Alignment.center,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 24.0),
+                  padding: EdgeInsets.only(top: screenHeight * 0.03),
                   child: Text(
                     "Eye Health Report",
                     style: GoogleFonts.urbanist(
                       color: const Color(0xFF5E7EA6),
-                      fontSize: 25,
+                      fontSize: screenWidth * 0.0625,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: screenHeight * 0.02),
               Expanded(
                 child: MediaQuery.removePadding(
                   context: context,
                   removeTop: true,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.05,
+                      vertical: screenHeight * 0.02,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         _buildDiagnosisBox(screenWidth, explainedImageBase64),
-                        SizedBox(height: cataractType == CataractType.immature ? 32 : 16),
-                        _buildMedicalDisclaimer(),
-                        SizedBox(height: cataractType == CataractType.immature ? 32 : 16),
-                        _buildActionButtons(context),
+                        SizedBox(height: cataractType == CataractType.immature ? screenHeight * 0.04 : screenHeight * 0.02),
+                        _buildMedicalDisclaimer(screenWidth),
+                        SizedBox(height: cataractType == CataractType.immature ? screenHeight * 0.04 : screenHeight * 0.02),
+                        _buildActionButtons(context, screenWidth),
+                        SizedBox(height: screenHeight * 0.02),
                       ],
                     ),
                   ),
@@ -153,69 +157,29 @@ class ResultsPage extends StatelessWidget {
     }
   }
 
-  Widget _buildConfirmExitButton(BuildContext context) {
+  Widget _buildConfirmExitButton(BuildContext context, double screenWidth) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        icon: const Icon(Icons.download_for_offline_outlined),
+        icon: Icon(
+          Icons.download_for_offline_outlined,
+          size: screenWidth * 0.06,
+        ),
         label: Text(
           "Save Report & Exit",
-          style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+          style: GoogleFonts.urbanist(
+            fontSize: screenWidth * 0.05,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
         onPressed: () async {
-          // Show a loading indicator
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Saving result...')),
+            const SnackBar(content: Text('Saving PDF report...')),
           );
 
-          // 1. Save the PDF locally
           await _savePdfToDownloads(context);
 
-          // 2. Upload Image and Save Data to Firestore
-          try {
-            final user = FirebaseAuth.instance.currentUser;
-            if (user != null) {
-              // --- START: NEW IMAGE UPLOAD LOGIC ---
-              // Convert base64 string to image data
-              final Uint8List imageBytes = base64Decode(explainedImageBase64);
-              final String imageName = 'scan_${DateTime.now().millisecondsSinceEpoch}.png';
-
-              // Create a reference to Firebase Storage
-              final Reference storageRef = FirebaseStorage.instance
-                  .ref()
-                  .child('scans/${user.uid}/$imageName');
-
-              // Upload the data
-              final uploadTask = storageRef.putData(imageBytes);
-              final snapshot = await uploadTask.whenComplete(() => {});
-
-              // Get the public URL
-              final String imageUrl = await snapshot.ref.getDownloadURL();
-              // --- END: NEW IMAGE UPLOAD LOGIC ---
-
-              final firestoreService = FirestoreService();
-              final classification = cataractType == CataractType.mature ? "Mature Cataract" : "Immature Cataract";
-
-              // Prepare the data with the new image URL
-              final scanData = {
-                'result': classification,
-                'confidence': confidence,
-                'timestamp': FieldValue.serverTimestamp(),
-                'imagePath': imageUrl, // Use the new URL here
-              };
-
-              await firestoreService.addScan(user.uid, scanData);
-            }
-          } catch (e) {
-            print("Error saving to Firestore or Storage: $e");
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Could not save result to your history.')),
-              );
-            }
-          }
-
-          // 3. Navigate away
           if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -228,17 +192,21 @@ class ResultsPage extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFF5244F3), width: 2),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
         ),
       ),
     );
   }
 
-
   Widget _buildDiagnosisBox(double screenWidth, String explainedImageBase64) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(32, 20, 32, 20),
+      padding: EdgeInsets.fromLTRB(
+        screenWidth * 0.08,
+        screenWidth * 0.05,
+        screenWidth * 0.08,
+        screenWidth * 0.05,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF161616),
         borderRadius: BorderRadius.circular(16),
@@ -246,10 +214,10 @@ class ResultsPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _buildStatusIndicator(),
-          const SizedBox(height: 12),
-          _buildDescriptionText(),
-          const SizedBox(height: 16),
+          _buildStatusIndicator(screenWidth),
+          SizedBox(height: screenWidth * 0.03),
+          _buildDescriptionText(screenWidth),
+          SizedBox(height: screenWidth * 0.04),
           _buildEyeImage(screenWidth, explainedImageBase64),
         ],
       ),
@@ -276,11 +244,14 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusIndicator() {
+  Widget _buildStatusIndicator(double screenWidth) {
     if (cataractType == CataractType.immature) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.02,
+          vertical: screenWidth * 0.01,
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFF362D1A),
           borderRadius: BorderRadius.circular(24),
@@ -290,7 +261,7 @@ class ResultsPage extends StatelessWidget {
           child: Text(
             "Immature Cataract Detected",
             style: GoogleFonts.urbanist(
-              fontSize: 20,
+              fontSize: screenWidth * 0.05,
               fontWeight: FontWeight.bold,
               color: const Color(0xFFE69146),
             ),
@@ -301,7 +272,10 @@ class ResultsPage extends StatelessWidget {
     } else {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.03,
+          vertical: screenWidth * 0.01,
+        ),
         decoration: BoxDecoration(
           color: const Color(0x26FF6767),
           borderRadius: BorderRadius.circular(24),
@@ -311,16 +285,16 @@ class ResultsPage extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.warning_rounded,
-                color: Color(0xFFDD0000),
-                size: 28,
+                color: const Color(0xFFDD0000),
+                size: screenWidth * 0.07,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: screenWidth * 0.02),
               Text(
                 "Mature Cataract Detected",
                 style: GoogleFonts.urbanist(
-                  fontSize: 20,
+                  fontSize: screenWidth * 0.05,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFFDD0000),
                 ),
@@ -332,12 +306,12 @@ class ResultsPage extends StatelessWidget {
     }
   }
 
-  Widget _buildDescriptionText() {
+  Widget _buildDescriptionText(double screenWidth) {
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
         style: GoogleFonts.urbanist(
-          fontSize: 15,
+          fontSize: screenWidth * 0.0375,
           color: Colors.white,
         ),
         children: cataractType == CataractType.immature
@@ -355,10 +329,15 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMedicalDisclaimer() {
+  Widget _buildMedicalDisclaimer(double screenWidth) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(32, 10, 32, 10),
+      padding: EdgeInsets.fromLTRB(
+        screenWidth * 0.08,
+        screenWidth * 0.025,
+        screenWidth * 0.08,
+        screenWidth * 0.025,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF131A21),
         borderRadius: BorderRadius.circular(16),
@@ -369,17 +348,17 @@ class ResultsPage extends StatelessWidget {
             "Medical Disclaimer",
             textAlign: TextAlign.center,
             style: GoogleFonts.urbanist(
-              fontSize: 20,
+              fontSize: screenWidth * 0.05,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF5244F3),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: screenWidth * 0.02),
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
               style: GoogleFonts.urbanist(
-                fontSize: 15,
+                fontSize: screenWidth * 0.0375,
                 color: Colors.white,
               ),
               children: const [
@@ -391,10 +370,10 @@ class ResultsPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: screenWidth * 0.04),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(screenWidth * 0.03),
             decoration: BoxDecoration(
               color: const Color(0xFF242443),
               borderRadius: BorderRadius.circular(24),
@@ -402,17 +381,17 @@ class ResultsPage extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
+                Icon(
                   Icons.campaign_rounded,
-                  color: Color(0xFF5244F3),
-                  size: 32,
+                  color: const Color(0xFF5244F3),
+                  size: screenWidth * 0.08,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: screenWidth * 0.02),
                 Expanded(
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.urbanist(
-                        fontSize: 15,
+                        fontSize: screenWidth * 0.0375,
                         color: Colors.white,
                       ),
                       children: const [
@@ -440,7 +419,7 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, double screenWidth) {
     if (cataractType == CataractType.mature) {
       return Column(
         children: [
@@ -458,20 +437,24 @@ class ResultsPage extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5244F3),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
               ),
               child: Text(
                 "Notify Eye Specialist",
-                style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+                style: GoogleFonts.urbanist(
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          _buildConfirmExitButton(context),
+          SizedBox(height: screenWidth * 0.03),
+          _buildConfirmExitButton(context, screenWidth),
         ],
       );
     } else {
-      return _buildConfirmExitButton(context);
+      return _buildConfirmExitButton(context, screenWidth);
     }
   }
 }

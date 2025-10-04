@@ -31,6 +31,8 @@ import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
 import 'package:a_eye/screens/scan/upload/upload_select_page.dart';
 import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
 
+import 'package:a_eye/auth_check_screen.dart';
+
 CataractType _determineCataractType(String classification) {
   final lowerClassification = classification.toLowerCase().trim();
 
@@ -50,8 +52,12 @@ CataractType _determineCataractType(String classification) {
 }
 
 final Map<String, WidgetBuilder> appRoutes = {
+
+  // Auth page
+  '/': (context) => const AuthCheckScreen(),
+
   // Landing Page
-  '/': (context) => LandingPage(
+  '/landing': (context) => LandingPage(
     onNext: () {
       Navigator.pushReplacementNamed(context, '/name');
     },

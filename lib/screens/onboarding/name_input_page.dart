@@ -27,6 +27,9 @@ class _NameInputPageState extends State<NameInputPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -69,138 +72,170 @@ class _NameInputPageState extends State<NameInputPage> {
             ),
           ),
 
-          // Step indicator...
-          Padding(
-            padding: const EdgeInsets.only(top: 60.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 120,
-                  height: 6,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF5244F3),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                Container(
-                  width: 120,
-                  height: 6,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                Container(
-                  width: 120,
-                  height: 6,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
-
-          // Content...
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30.0),
+          // Main scrollable content
+          SafeArea(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  "What's your name?",
-                  style: GoogleFonts.urbanist(
-                    color: Colors.white,
-                    fontSize: 40,
+                // Step indicator...
+                Padding(
+                  padding: EdgeInsets.only(top: screenHeight * 0.02),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: screenWidth * 0.28,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5244F3),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      Container(
+                        width: screenWidth * 0.28,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      Container(
+                        width: screenWidth * 0.28,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _nameController,
-                  autofocus: true,
-                  maxLength: 13,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Enter your name',
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    counterText: '',
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.grey,
-                        width: 2.0,
+
+                // Scrollable content area
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: screenHeight -
+                            MediaQuery.of(context).padding.top -
+                            MediaQuery.of(context).padding.bottom -
+                            screenHeight * 0.02 -
+                            120, // Approximate space for indicator and buttons
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(height: screenHeight * 0.05),
+                            Text(
+                              "What's your name?",
+                              style: GoogleFonts.urbanist(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.1,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: screenHeight * 0.025),
+                            TextField(
+                              controller: _nameController,
+                              autofocus: true,
+                              maxLength: 13,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Enter your name',
+                                hintStyle: TextStyle(color: Colors.grey.shade400),
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.05),
+                                counterText: '',
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Colors.grey,
+                                    width: 2.0,
+                                  ),
+                                ),
+                                floatingLabelBehavior: FloatingLabelBehavior.never,
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.05),
+                          ],
+                        ),
                       ),
                     ),
-                    floatingLabelBehavior: FloatingLabelBehavior.never,
                   ),
                 ),
-              ],
-            ),
-          ),
 
-          // Navigation buttons...
-          Positioned(
-            bottom: 40,
-            left: 30,
-            right: 30,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                OutlinedButton(
-                  onPressed: widget.onBack,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 53, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                // Navigation buttons...
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: 30,
+                    right: 30,
+                    bottom: 20,
                   ),
-                  child: Text(
-                    'Previous',
-                    style: GoogleFonts.urbanist(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_nameController.text.trim().isNotEmpty) {
-                      widget.onNext(_nameController.text.trim());
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please enter your name"),
-                          backgroundColor: Colors.redAccent,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: OutlinedButton(
+                          onPressed: widget.onBack,
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.12,
+                                vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: Text(
+                            'Previous',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5244F3),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 60, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    'Next',
-                    style: GoogleFonts.urbanist(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (_nameController.text.trim().isNotEmpty) {
+                              widget.onNext(_nameController.text.trim());
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please enter your name"),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5244F3),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.13,
+                                vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: Text(
+                            'Next',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

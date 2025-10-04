@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:a_eye/services/firestore_service.dart';
 import 'package:a_eye/services/api_service.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class AnalyzingPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -75,20 +78,47 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         // 4. Extract the data from the result
         final String classification = result['classification'];
         final String confidence = result['confidencePercentage'];
+        final String explainedImageBase64 = result['explained_image_base64'] ?? '';
 
-        // 5. Save data to Firestore FIRST (before navigating)
+        // 5. Upload image to Firebase Storage and get URL
         final user = FirebaseAuth.instance.currentUser;
+        String? imageUrl;
+
+        if (user != null && explainedImageBase64.isNotEmpty) {
+          try {
+            // Convert base64 to image bytes
+            final Uint8List imageBytes = base64Decode(explainedImageBase64);
+            final String imageName = 'scan_${DateTime.now().millisecondsSinceEpoch}.png';
+
+            // Upload to Firebase Storage
+            final Reference storageRef = FirebaseStorage.instance
+                .ref()
+                .child('scans/${user.uid}/$imageName');
+
+            final uploadTask = storageRef.putData(imageBytes);
+            final snapshot = await uploadTask.whenComplete(() => {});
+
+            // Get the download URL
+            imageUrl = await snapshot.ref.getDownloadURL();
+            print("Image uploaded to Firebase Storage: $imageUrl");
+          } catch (e) {
+            print("Error uploading image to Firebase Storage: $e");
+            // Continue even if image upload fails
+          }
+        }
+
+        // 6. Save complete data to Firestore (with Firebase Storage URL)
         if (user != null) {
           final scanData = {
             'result': classification,
             'confidence': confidence,
             'timestamp': Timestamp.now(),
-            'imagePath': imagePath,
+            'imagePath': imageUrl ?? imagePath, // Use Firebase URL if available, fallback to local path
           };
           await FirestoreService().addScan(user.uid, scanData);
         }
 
-        // 6. Get userName
+        // 7. Get userName
         String userName = 'Guest';
         if (user != null) {
           final userDoc = await FirestoreService().getUser(user.uid);
@@ -98,19 +128,16 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
           }
         }
 
-        // 7. Convert classification string to CataractType enum
-        // CRITICAL: This is where the bug was - proper conversion needed!
+        // 8. Convert classification string to CataractType enum
         CataractType cataractType;
         if (classification.toLowerCase().contains('mature') &&
             !classification.toLowerCase().contains('immature')) {
           cataractType = CataractType.mature;
-          print("DEBUG: Classification '$classification' converted to CataractType.mature");
         } else {
           cataractType = CataractType.immature;
-          print("DEBUG: Classification '$classification' converted to CataractType.immature");
         }
 
-        // 8. Navigate to ResultsPage with properly constructed object
+        // 9. Navigate to ResultsPage
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -118,7 +145,7 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
               builder: (context) => ResultsPage(
                 userName: userName,
                 confidence: confidence,
-                explainedImageBase64: result['explained_image_base64'] ?? '',
+                explainedImageBase64: explainedImageBase64,
                 explanationText: result['explanation'] ?? '',
                 cataractType: cataractType,
               ),
