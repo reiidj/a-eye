@@ -91,7 +91,10 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     // Basic validation
-    if (nameController.text.trim().isEmpty || _selectedGender == null || _selectedAgeGroup == null) {
+    if (nameController.text.trim().isEmpty ||
+        _selectedGender == null ||
+        _selectedAgeGroup == null ||
+        emailController.text.trim().isEmpty) { // <-- Email check added
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields.')),
       );
@@ -196,7 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     (val) => setState(() => _selectedAgeGroup = val), isRequired: true),
                             const Divider(color: Colors.white30, thickness: 1),
                             _buildInputRow("Email", emailController,
-                                inputType: TextInputType.emailAddress),
+                                inputType: TextInputType.emailAddress, isRequired: true),
                             const Divider(color: Colors.white30, thickness: 1),
                             const SizedBox(height: 32),
                             Center(
@@ -398,7 +401,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _getHintText(String label) {
     switch (label.toLowerCase()) {
       case 'email':
-        return 'Enter your email (optional)';
+        return 'Enter your email';
       case 'age':
         return 'Select your age group';
       case 'name':
