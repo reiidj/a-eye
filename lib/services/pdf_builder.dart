@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Generates a PDF report from the analysis results.
 /// Returns a [Future<Uint8List>] containing the bytes of the generated PDF.

@@ -9,10 +9,11 @@ import 'dart:convert';
 import 'package:a_eye/services/pdf_builder.dart';
 import 'dart:typed_data';
 // firebase
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:a_eye/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
+
 
 enum CataractType { immature, mature }
 
@@ -108,50 +109,40 @@ class ResultsPage extends StatelessWidget {
     );
   }
 
+
   Future<void> _savePdfToDownloads(BuildContext context) async {
-    final status = await Permission.storage.request();
+    try {
+      final pdfBytes = await generateReportPdf(
+        userName: userName,
+        classification: cataractType == CataractType.mature ? "Mature Cataract" : "Immature Cataract",
+        confidence: confidence,
+        explanationText: explanationText,
+      );
 
-    if (status.isGranted) {
-      try {
-        final directory = await getApplicationDocumentsDirectory();
-        final downloadsDirectoryPath = Platform.isAndroid
-            ? '/storage/emulated/0/Download'
-            : directory.path;
+      final fileName = 'A-EYE_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
 
-        final downloadsDir = Directory(downloadsDirectoryPath);
-        if (!await downloadsDir.exists()) {
-          await downloadsDir.create(recursive: true);
-        }
+      // Save to temporary directory first
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/$fileName';
+      final file = File(filePath);
+      await file.writeAsBytes(pdfBytes);
 
-        final pdfBytes = await generateReportPdf(
-          userName: userName,
-          classification: cataractType == CataractType.mature ? "Mature Cataract" : "Immature Cataract",
-          confidence: confidence,
-          explanationText: explanationText,
-        );
+      // Share the file - user can choose to save to Downloads
+      await Share.shareXFiles(
+        [XFile(filePath)],
+        text: 'A-Eye Cataract Report',
+      );
 
-        final fileName = 'A-EYE_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-        final filePath = '${downloadsDir.path}/$fileName';
-        final file = File(filePath);
-        await file.writeAsBytes(pdfBytes);
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Report saved to Downloads folder!')),
-          );
-        }
-      } catch (e) {
-        print("Error saving PDF: $e");
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to save report.')),
-          );
-        }
-      }
-    } else if (status.isDenied || status.isPermanentlyDenied) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Storage permission is required to save the report.')),
+          const SnackBar(content: Text('Share your report or save it!')),
+        );
+      }
+    } catch (e) {
+      print("Error sharing PDF: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share report: $e')),
         );
       }
     }
