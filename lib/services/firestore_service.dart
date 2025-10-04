@@ -13,6 +13,31 @@ class FirestoreService {
     return _db.collection('users').doc(userId).set(userData);
   }
 
+  Future<int> getNextLocalId() async {
+    // Get a reference to the document that holds our counter
+    final counterRef = _db.collection('counters').doc('userCounter');
+
+    // Run a transaction to safely get and increment the counter
+    return _db.runTransaction((transaction) async {
+      // Get the current counter document
+      final snapshot = await transaction.get(counterRef);
+
+      if (!snapshot.exists) {
+        // If the counter doesn't exist, this is the first user.
+        // Create the counter document with an initial value.
+        transaction.set(counterRef, {'currentId': 1});
+        return 1;
+      }
+
+      // If the counter exists, get the current ID and increment it
+      final currentId = snapshot.data()!['currentId'] as int;
+      final newId = currentId + 1;
+      transaction.update(counterRef, {'currentId': newId});
+
+      return newId;
+    });
+  }
+
   /// Retrieves a single user document by their user ID.
   Future<DocumentSnapshot> getUser(String userId) {
     return _db.collection('users').doc(userId).get();

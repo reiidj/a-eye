@@ -46,85 +46,84 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
 
   Future<void> _runAnalysisAndNavigate() async {
     try {
+      // 1. Get the image path from the arguments
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args == null || args['imageBytes'] == null) {
-        throw Exception("No image data provided to analyzing page.");
+      if (args == null || args['imagePath'] == null) {
+        throw Exception("No image path provided to analyzing page.");
       }
+      final String imagePath = args['imagePath'];
 
-      final Uint8List imageBytes = args['imageBytes'];
-      final String imagePath = args['imagePath'] as String? ?? '';
-
-      // Step 3: resize/compress before sending to API
-      final Uint8List resizedBytes = await FlutterImageCompress.compressWithList(
-        imageBytes,
-        minWidth: 1024,
-        minHeight: 1024,
-        quality: 85,
-      );
-
-      // 2. Create an instance of the new ApiService and classify the resized image
+      // 2. Call the API
       final ApiService apiService = ApiService();
-      final mimeType = "image/jpeg"; // hardcoded, or detect dynamically with lookupMimeType
-      final result = await apiService.classifyImageBytes(
-        resizedBytes,
-        imagePath.split('/').last,
-        mimeType,
-      );
+      final Map<String, dynamic> result = await apiService.classifyAndExplainImage(imagePath);
 
-      if (result['error'] != null) {
-        print("API returned error: ${result['error']}");
-        // TODO: show error to user
-        return;
-      }
+      // 3. Handle the response
+      if (result.containsKey('error')) {
+        // --- ERROR PATH ---
+        // If the API returns an error, show it and stop.
+        final String errorMessage = result['error'] ?? 'An unknown analysis error occurred.';
+        print("Error during analysis: $errorMessage");
 
-      final String classification = result['classification'];
-      final double confidence = result['confidence'];
-      final String explanation = result['explanation']; // optional
+        if (mounted) {
+          // Optional: Navigate to an invalid/error page
+          Navigator.pushReplacementNamed(
+            context,
+            '/uploadInvalid', // Or your generic invalid page
+            arguments: {'reason': errorMessage, 'imagePath': imagePath},
+          );
+        }
 
-      // 3. Save the result from the API to Firestore
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final scanData = {
-          'result': classification,
-          'confidence': confidence,
-          'timestamp': Timestamp.now(),
-          'imagePath': imagePath, // in real app, upload to Firebase Storage and save URL
-        };
-        await FirestoreService().addScan(user.uid, scanData);
-      }
+      } else {
+        // --- SUCCESS PATH ---
+        // If the API call is successful, proceed.
 
-      String userName = 'Guest';
-      if (user != null) {
-        final userDoc = await FirestoreService().getUser(user.uid);
-        if (userDoc.exists) {
-          final userData = userDoc.data() as Map<String, dynamic>;
-          userName = userData['name'] ?? 'Guest';
+        // 4. Extract the correct data from the result
+        final String classification = result['classification'];
+        final String confidence = result['confidencePercentage']; // Use the correct key
+
+        // 5. Save the CORRECT data to Firestore
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final scanData = {
+            'result': classification,      // e.g., "Mature Cataract"
+            'confidence': confidence,      // e.g., "98.76%"
+            'timestamp': Timestamp.now(),  // The current time
+            'imagePath': imagePath,        // The local path of the image
+          };
+          // This now saves the correct "Mature" result before you see the history page.
+          await FirestoreService().addScan(user.uid, scanData);
+        }
+
+        // 6. Navigate to the ResultsPage with the complete, correct data
+        if (mounted) {
+          // We add the userName here so the results page can display it
+          String userName = 'Guest';
+          if (user != null) {
+            final userDoc = await FirestoreService().getUser(user.uid);
+            if (userDoc.exists) {
+              final userData = userDoc.data() as Map<String, dynamic>;
+              userName = userData['name'] ?? 'Guest';
+            }
+          }
+          result['userName'] = userName;
+
+          Navigator.pushReplacementNamed(
+            context,
+            '/results',
+            arguments: result, // Pass the entire successful result map
+          );
         }
       }
-
-      final cataractType = classification.contains('Mature')
-          ? CataractType.mature
-          : CataractType.immature;
-
-      if (mounted) {
-        Navigator.pushReplacementNamed(
-          context,
-          '/results',
-          arguments: {
-            'cataractType': cataractType,
-            'prediction': confidence,
-            'imagePath': imagePath,
-            'userName': userName,
-          },
-        );
-      }
     } catch (e, st) {
-      print("An error occurred during analysis: $e");
+      print("A critical error occurred in _runAnalysisAndNavigate: $e");
       print(st);
-      // Optionally navigate to error page
+      if (mounted) {
+        // Handle unexpected errors (e.g., failed to get arguments)
+        Navigator.pushReplacementNamed(context, '/uploadInvalid', arguments: {'reason': 'A critical error occurred.'});
+      }
     }
   }
-
+// pass etc etc to firebase
   @override
   Widget build(BuildContext context) {
     // The build method does not need to change.

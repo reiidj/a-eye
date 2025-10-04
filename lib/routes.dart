@@ -88,21 +88,16 @@ final Map<String, WidgetBuilder> appRoutes = {
 
   // Age Select Page
   '/age': (context) {
+    // Get the arguments from the previous page
     final args = ModalRoute.of(context)!.settings.arguments as Map;
     final userName = args['name'];
     final gender = args['gender'];
+
+    // Pass only the required data and the onBack callback.
+    // The onNext logic is now handled inside the AgeSelectPage itself.
     return AgeSelectPage(
-      onNext: (ageGroup) {
-        Navigator.pushNamed(
-          context,
-          '/welcome',
-          arguments: {
-            'name': userName,
-            'gender': gender,
-            'ageGroup': ageGroup,
-          },
-        );
-      },
+      userName: userName,
+      gender: gender,
       onBack: (ageGroup) => Navigator.pop(context),
     );
   },
@@ -199,20 +194,28 @@ final Map<String, WidgetBuilder> appRoutes = {
   },
 
   '/results': (context) {
-    // Get the arguments passed from the AnalyzingPage
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    // 1. Get the single 'analysisResult' map passed as an argument.
+    final analysisResult = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
-    // Directly extract the arguments with the correct types
-    final cataractType = args['cataractType'] as CataractType;
-    final userName = args['userName'] as String;
-    final prediction = args['prediction'] as double;
-    final imagePath = args['imagePath'] as String;
+    // 2. Extract the data using the correct keys from your API response.
+    final String classification = analysisResult['classification'];
+    final String confidence = analysisResult['confidencePercentage'];
+    final String explainedImageBase64 = analysisResult['explained_image_base64'];
+    final String explanationText = analysisResult['explanation'];
+    // Note: 'userName' is not in the API response, so we handle it safely.
+    // You will need to pass it along with the analysisResult if you need it.
+    final String userName = analysisResult['userName'] ?? 'Guest';
 
-    // Pass the data directly to the ResultsPage
+    // 3. Use your helper function to determine the cataract type.
+    final CataractType cataractType = _determineCataractType(classification);
+
+    // 4. Pass the processed data to your ResultsPage.
+    // IMPORTANT: Your ResultsPage must be updated to accept these parameters.
     return ResultsPage(
       userName: userName,
-      prediction: prediction,
-      imagePath: imagePath,
+      confidence: confidence, // e.g., "98.76%"
+      explainedImageBase64: explainedImageBase64, // The image string
+      explanationText: explanationText, // The detailed report
       cataractType: cataractType,
     );
   },
