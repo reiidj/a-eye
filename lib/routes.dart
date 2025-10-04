@@ -157,35 +157,20 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/camera': (context) => const CameraPage(),
 
   '/crop': (context) {
-    final args =
-    ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final String imagePath = args?['imagePath'] ?? '';
-
-    return CropPage(
-      imagePath: imagePath,
-      onNext: () {
-        // Pass the image path to the analyzing page
-        Navigator.pushNamed(context, '/analyzing',
-            arguments: {'imagePath': imagePath});
-      },
-      onBack: () {
-        Navigator.popUntil(context, ModalRoute.withName('/camera'));
-      },
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    return CropImagePage(
+      imagePath: args['imagePath'] as String,
+      selectedEye: args['selectedEye'] as String,
     );
   },
 
   '/invalid': (context) {
-    // Extract the arguments sent from the CameraPage
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
-    // Pass the extracted arguments into the widget's constructor
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     return InvalidImagePage(
-      imagePath: args?['imagePath'] ?? '',
-      reason: args?['reason'] ?? "The image isn't suitable for analysis.",
-      onBack: () {
-        // This popUntil logic is correct
-        Navigator.popUntil(context, ModalRoute.withName('/camera'));
-      },
+      imagePath: args['imagePath'] as String,
+      selectedEye: args['selectedEye'] as String,
+      reason: args['reason'] as String,
+      onBack: () => Navigator.of(context).pop(),
     );
   },
 

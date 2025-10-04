@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class UploadInvalidPage extends StatelessWidget {
-  // --- FIX START: Define constructor parameters ---
+
   final String imagePath;
   final String reason;
   final VoidCallback? onBack;

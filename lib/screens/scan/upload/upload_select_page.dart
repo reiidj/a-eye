@@ -3,8 +3,9 @@ import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:a_eye/image_validator.dart';
+import 'package:a_eye/services/api_service.dart';
+import 'dart:typed_data';
+import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
 
 class SelectPage extends StatefulWidget {
   final VoidCallback onNext;
@@ -16,63 +17,48 @@ class SelectPage extends StatefulWidget {
 }
 
 class _SelectPageState extends State<SelectPage> {
-  // We no longer need the _selectedImage state variable
-  // File? _selectedImage;
-
-  // 2. Renamed the function for clarity
-  Future<void> _pickAndProcessImage() async {
+  bool _isLoading = false;
+  Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-    await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
-    if (pickedFile == null) return; // User cancelled the action
+    if (image != null) {
+      setState(() {
+        _isLoading = true; // Show a loading indicator
+      });
 
-    final File imageFile = File(pickedFile.path);
+      final ApiService apiService = ApiService();
+      final Uint8List imageBytes = await image.readAsBytes();
 
-    // 3. Show a loading indicator (optional but good for UX)
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(child: CircularProgressIndicator());
-      },
-    );
+      // Call the new API for validation
+      final validationResult = await apiService.validateImage(imageBytes);
 
-    // 4. Call the validator
-    final ValidationResult validationResult =
-    await ImageValidator.validateImageForCataract(imageFile.path);
+      setState(() {
+        _isLoading = false; // Hide loading indicator
+      });
 
-    // 5. Dismiss the loading indicator
-    if (mounted) Navigator.pop(context);
-    if (!mounted) return;
-
-    // 6. Navigate based on the validation result
-    if (validationResult.isValid) {
-      // If valid, navigate to the crop page
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => UploadCropPage(
-            imagePath: imageFile.path,
-            onNext: () => Navigator.pushNamed(
-              context,
-              '/analyzing',
-              arguments: {'imagePath': imageFile.path},
+      if (mounted) { // Check if the widget is still in the tree
+        if (validationResult['isValid'] == true) {
+          // Image is valid, proceed to the cropping page
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UploadCropPage(imagePath: image.path),
             ),
-            onBack: () => Navigator.pop(context),
-          ),
-        ),
-      );
-    } else {
-      // If invalid, navigate to the dedicated invalid page for uploads
-      Navigator.pushNamed(
-        context,
-        '/uploadInvalid',
-        arguments: {
-          'imagePath': imageFile.path,
-          'reason': validationResult.reason,
-        },
-      );
+          );
+        } else {
+          // Image is invalid, show the invalid page with the reason from the server
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UploadInvalidPage(
+                reason: validationResult['reason'],
+                imagePath: image.path,
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -100,7 +86,7 @@ class _SelectPageState extends State<SelectPage> {
               child: Center(
                 child: OutlinedButton(
                   // 7. Make sure the button calls the new function
-                  onPressed: _pickAndProcessImage,
+                  onPressed: _pickImage,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                     padding: const EdgeInsets.symmetric(

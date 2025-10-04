@@ -4,23 +4,27 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'dart:typed_data';
 
-class CropPage extends StatefulWidget {
+class CropImagePage extends StatefulWidget {
   final String imagePath;
-  final VoidCallback? onNext;
-  final VoidCallback? onBack;
+  final String selectedEye;
+  // onNext and onBack are handled by direct navigation, so they can be removed
+  // for a cleaner constructor if they are not used elsewhere.
+  // final VoidCallback? onNext;
+  // final VoidCallback? onBack;
 
-  const CropPage({
+  const CropImagePage({
     super.key,
     required this.imagePath,
-    this.onNext,
-    this.onBack,
+    required this.selectedEye,
+    // this.onNext,
+    // this.onBack,
   });
 
   @override
-  State<CropPage> createState() => _CropPageState();
+  State<CropImagePage> createState() => CropImagePageState();
 }
 
-class _CropPageState extends State<CropPage> {
+class CropImagePageState extends State<CropImagePage> {
   final CropController _cropController = CropController();
   late Uint8List _imageData;
   bool _isCropping = false;
@@ -35,37 +39,36 @@ class _CropPageState extends State<CropPage> {
   Future<void> _loadImage() async {
     final file = File(widget.imagePath);
     _imageData = await file.readAsBytes();
-    setState(() {
-      _imageReady = true;
-    });
+    if (mounted) {
+      setState(() {
+        _imageReady = true;
+      });
+    }
   }
 
-  void _onCropped(Uint8List croppedData) async {
-    final tempPath =
-        '${Directory.systemTemp.path}/cropped_image_${DateTime.now().millisecondsSinceEpoch}.png';
-    final croppedFile = await File(tempPath).writeAsBytes(croppedData);
-
-    // REMOVED HIVE LOGIC: Path is passed via arguments below.
-    // final box = Hive.box('scanResultsBox');
-    // await box.put('latestImagePath', croppedFile.path);
-
+  // --- THIS IS THE CORRECTED LOGIC ---
+  void _onCropped(Uint8List croppedData) {
     if (mounted) {
       Navigator.pushNamed(context, '/analyzing', arguments: {
-        'imagePath': croppedFile.path,
+        // Pass the cropped image data directly as bytes
+        'imageBytes': croppedData,
+        // Pass the original, uncropped image path
+        'imagePath': widget.imagePath,
+        // Pass the selected eye
+        'selectedEye': widget.selectedEye,
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // The build method remains unchanged...
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
       body: Column(
         children: [
-          // Header
+          // Header (Unchanged)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(34, 40, 34, 24),
@@ -90,14 +93,12 @@ class _CropPageState extends State<CropPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(Icons.remove_red_eye_outlined,
-                          color: Colors.white),
+                      const Icon(Icons.remove_red_eye_outlined, color: Colors.white),
                       Expanded(
                         child: Text(
                           "Drag, zoom, and position your eye within the guide.",
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.urbanist(
-                              fontSize: 17, color: Colors.white),
+                          style: GoogleFonts.urbanist(fontSize: 17, color: Colors.white),
                         ),
                       ),
                     ],
@@ -107,7 +108,7 @@ class _CropPageState extends State<CropPage> {
             ),
           ),
 
-          // Cropper with enhanced controls
+          // Cropper with enhanced controls (Unchanged)
           if (_imageReady)
             SizedBox(
               height: screenHeight * 0.45,
@@ -127,15 +128,11 @@ class _CropPageState extends State<CropPage> {
                     radius: 8,
                     initialSize: 1,
                     initialArea: null,
-                    cornerDotBuilder: (size, edgeAlignment) =>
-                    const SizedBox.shrink(),
+                    cornerDotBuilder: (size, edgeAlignment) => const SizedBox.shrink(),
                   ),
-                  // Custom crosshair overlay - ignore pointer events
                   Positioned.fill(
                     child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: CrosshairPainter(),
-                      ),
+                      child: CustomPaint(painter: CrosshairPainter()),
                     ),
                   ),
                 ],
@@ -148,41 +145,31 @@ class _CropPageState extends State<CropPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(
-                      color: Color(0xFF5244F3),
-                    ),
+                    CircularProgressIndicator(color: Color(0xFF5244F3)),
                     SizedBox(height: 16),
-                    Text(
-                      "Loading image...",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    Text("Loading image...", style: TextStyle(color: Colors.white)),
                   ],
                 ),
               ),
             ),
           const SizedBox(height: 40),
 
-          // Buttons
+          // Buttons (Unchanged)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               children: [
                 OutlinedButton(
-                  onPressed: widget.onBack,
+                  // Use Navigator.pop for a simple back action
+                  onPressed: () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
-                    side:
-                    const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 95, vertical: 18),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
+                    side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 95, vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                   child: Text(
-                    "Re-Upload Image",
-                    style: GoogleFonts.urbanist(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
+                    "Retake Photo", // Changed from "Re-Upload" to match camera flow
+                    style: GoogleFonts.urbanist(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -190,7 +177,7 @@ class _CropPageState extends State<CropPage> {
             ),
           ),
 
-          // Analyze Button
+          // Analyze Button (Unchanged)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             child: SizedBox(
@@ -203,13 +190,9 @@ class _CropPageState extends State<CropPage> {
                 }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _imageReady && !_isCropping
-                      ? const Color(0xFF5244F3)
-                      : Colors.grey,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
+                  backgroundColor: _imageReady && !_isCropping ? const Color(0xFF5244F3) : Colors.grey,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -218,29 +201,18 @@ class _CropPageState extends State<CropPage> {
                       const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
                     else
                       SizedBox(
                         height: 40,
                         width: 35,
-                        child: Image.asset(
-                          'assets/images/Eye Scan 2.png',
-                          fit: BoxFit.contain,
-                          color: Colors.white,
-                        ),
+                        child: Image.asset('assets/images/Eye Scan 2.png', fit: BoxFit.contain, color: Colors.white),
                       ),
                     const SizedBox(width: 12),
                     Text(
                       _isCropping ? "Processing..." : "Analyze with A-Eye",
-                      style: GoogleFonts.urbanist(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ],
                 ),
@@ -252,7 +224,8 @@ class _CropPageState extends State<CropPage> {
     );
   }
 }
-// ... (CrosshairPainter remains the same)
+
+// CrosshairPainter class remains exactly the same
 class CrosshairPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

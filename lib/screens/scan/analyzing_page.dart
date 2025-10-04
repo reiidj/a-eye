@@ -1,13 +1,12 @@
-// lib/screens/scan/analyzing_page.dart
-
 import 'dart:async';
-import 'dart:typed_data'; // Required for image bytes
-import 'package:a_eye/services/analysis_service.dart';
+import 'dart:typed_data';
 import 'package:a_eye/screens/scan/results_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import for Timestamp
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:a_eye/services/firestore_service.dart';
+import 'package:a_eye/services/api_service.dart';
 
 class AnalyzingPage extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -33,7 +32,6 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       });
     });
 
-    // Run analysis after the first frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runAnalysisAndNavigate();
     });
@@ -52,19 +50,33 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         throw Exception("No image data provided to analyzing page.");
       }
 
-      // We only need the image bytes and path from the arguments
       final Uint8List imageBytes = args['imageBytes'];
       final String imagePath = args['imagePath'] as String? ?? '';
 
-      // Create an instance of the service and run the analysis
-      final result = await AnalysisService().analyzeImageAndSave(
-        imageBytes: imageBytes,
-        imagePath: imagePath,
-      );
+      // 2. Create an instance of the new ApiService and classify the image
+      final ApiService apiService = ApiService();
+      final Map<String, dynamic> result = await apiService.classifyImage(imageBytes);
 
-      // Fetch the user's name from Firestore for the results page
-      String userName = 'Guest';
+      final String classification = result['classification'];
+      final double confidence = result['confidence'];
+      // final String explanation = result['explanation']; // You can use this later
+
+      // 3. Save the result from the API to Firestore
       final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final scanData = {
+          'result': classification,
+          'confidence': confidence,
+          'timestamp': Timestamp.now(),
+          'imagePath': imagePath, // In a real app, upload to Firebase Storage and save URL
+        };
+        // Use your existing FirestoreService to save the data
+        await FirestoreService().addScan(user.uid, scanData);
+      }
+
+      // --- The rest of the logic remains mostly the same ---
+
+      String userName = 'Guest';
       if (user != null) {
         final userDoc = await FirestoreService().getUser(user.uid);
         if (userDoc.exists) {
@@ -73,19 +85,17 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         }
       }
 
-      // Determine the CataractType enum from the classification string
-      final cataractType = result.classification.contains('Mature')
+      final cataractType = classification.contains('Mature')
           ? CataractType.mature
           : CataractType.immature;
 
-      // Navigate to the results page with all the necessary data
       if (mounted) {
         Navigator.pushReplacementNamed(
           context,
           '/results',
           arguments: {
             'cataractType': cataractType,
-            'prediction': result.probability,
+            'prediction': confidence,
             'imagePath': imagePath,
             'userName': userName,
           },
@@ -93,13 +103,16 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       }
     } catch (e) {
       print("An error occurred during analysis: $e");
-      // You could navigate to an error page here if you wanted
+      // Optional: Navigate to an error page to inform the user
+      // if (mounted) {
+      //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ErrorPage(message: e.toString())));
+      // }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // The build method remains exactly the same
+    // The build method does not need to change.
     return Scaffold(
       backgroundColor: const Color(0xFF161616),
       body: Column(
