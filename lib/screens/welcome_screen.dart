@@ -92,7 +92,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       child: SizedBox(
                         width: 160,
                         height: 160,
-                        child: Image.asset('assets/images/A-Eye Icon.png'),
+                        child: Image.asset('assets/images/Help button.png'),
                       ),
                     ),
                   ),
