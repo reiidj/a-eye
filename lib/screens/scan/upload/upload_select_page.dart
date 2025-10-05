@@ -1,10 +1,8 @@
-import 'dart:io';
 import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:a_eye/services/api_service.dart';
-import 'dart:typed_data';
 import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
 
 class SelectPage extends StatefulWidget {

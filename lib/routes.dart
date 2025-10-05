@@ -18,8 +18,6 @@ import 'package:a_eye/screens/scan_setup/profile_page.dart';
 // Scan
 import 'package:a_eye/screens/scan/capture/camera_page.dart';
 import 'package:a_eye/screens/scan/analyzing_page.dart';
-import 'package:a_eye/screens/scan/analysis_complete_page.dart';
-
 import 'package:a_eye/screens/scan/results_page.dart';
 
 // Scan/capture
@@ -183,19 +181,6 @@ final Map<String, WidgetBuilder> appRoutes = {
         // Forward the arguments to the complete page
         Navigator.pushNamed(context, '/complete', arguments: args);
       },
-    );
-  },
-
-  '/complete': (context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
-    // Example: read prediction
-    final prediction = args?['prediction'] ?? 0.0;
-    final imagePath = args?['imagePath'] ?? '';
-
-    return AnalyzedPage(
-      prediction: prediction,
-      imagePath: imagePath,
     );
   },
 

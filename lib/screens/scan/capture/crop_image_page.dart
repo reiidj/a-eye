@@ -40,11 +40,14 @@ class CropImagePageState extends State<CropImagePage> {
     }
   }
 
-  void _onCropped(Uint8List croppedData) {
+  void _onCropped(Uint8List croppedData) async {
+    final tempPath = '${Directory.systemTemp.path}/cropped_image_${DateTime.now().millisecondsSinceEpoch}.png';
+    await File(tempPath).writeAsBytes(croppedData);
+
     if (mounted) {
       Navigator.pushNamed(context, '/analyzing', arguments: {
         'imageBytes': croppedData,
-        'imagePath': widget.imagePath,
+        'imagePath': tempPath,
         'selectedEye': widget.selectedEye,
       });
     }
