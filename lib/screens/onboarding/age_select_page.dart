@@ -56,8 +56,6 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
       };
 
       await firestoreService.addUser(user.uid, userData);
-
-      // Navigate to the welcome screen, removing all previous routes.
       // This dismisses the loading indicator automatically.
       Navigator.pushNamedAndRemoveUntil(
         context,

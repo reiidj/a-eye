@@ -216,7 +216,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                             padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.12,
+                                horizontal: screenWidth * 0.10,
                                 vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
