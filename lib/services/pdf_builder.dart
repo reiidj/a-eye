@@ -56,7 +56,7 @@ Future<Uint8List> generateReportPdf({
               text: pw.TextSpan(
                 style: const pw.TextStyle(fontSize: 12),
                 children: [
-                  pw.TextSpan(text: 'Confidence Score: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.TextSpan(text: 'Classification Score: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                   pw.TextSpan(text: confidence),
                 ],
               ),

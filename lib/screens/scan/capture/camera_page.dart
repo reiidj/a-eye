@@ -160,18 +160,21 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
                     ),
-                    Positioned(
-                      bottom: screenHeight * 0.025,
-                      left: 0,
-                      right: 0,
-                      child: Center(child: _buildEyeSelector(screenWidth)),
-                    ),
                   ],
                 ),
               ),
               Expanded(
                 child: Container(
-                  color: const Color(0xFF131A21),
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF131A21),
+                    border: Border(
+                      top: BorderSide(
+                        color: Color(0xFF5244F3),
+                        width: 2,
+                      ),
+                    ),
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -205,14 +208,51 @@ class _CameraPageState extends State<CameraPage> {
                           height: screenWidth * 0.28,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
+                            color: const Color(0xFF131A21),
                             border: Border.all(
                               color: const Color(0xFF5244F3),
                               width: screenWidth * 0.03,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF5244F3).withOpacity(0.5),
+                                spreadRadius: 3,
+                                blurRadius: 10,
+                              ),
+                              BoxShadow(
+                                color: const Color(0xFF5244F3).withOpacity(0.2),
+                                spreadRadius: 6,
+                                blurRadius: 20,
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      SizedBox(height: screenHeight * 0.05),
+                      SizedBox(height: screenHeight * 0.04),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/guide');
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.08,
+                            vertical: screenHeight * 0.015,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(32),
+                          ),
+                        ),
+                        child: Text(
+                          "Capture Guide",
+                          style: GoogleFonts.urbanist(
+                            color: const Color(0xFF5244F3),
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.04),
                     ],
                   ),
                 ),
@@ -247,19 +287,6 @@ class _CameraPageState extends State<CameraPage> {
             child: CameraPreview(_controller!),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildEyeSelector(double screenWidth) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(40),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [_eyeButton('Left', screenWidth), _eyeButton('Right', screenWidth)],
       ),
     );
   }

@@ -58,7 +58,7 @@ class _ProfilePageState extends State<ProfilePage> {
           nameController.text = userData['name'] ?? '';
           _selectedGender = userData['gender'];
           _selectedAgeGroup = userData['ageGroup'];
-          emailController.text = currentUser!.email ?? (userData['email'] ?? '');
+          emailController.text = userData['email'] ?? currentUser!.email ?? '';
           isLoading = false;
         });
       } else {
@@ -108,7 +108,11 @@ class _ProfilePageState extends State<ProfilePage> {
         const SnackBar(content: Text('Profile saved successfully!'), backgroundColor: Colors.green),
       );
 
-      Navigator.pushReplacementNamed(context, '/welcome');
+      // Reload the data to reflect the changes on the page
+      await _loadUserData();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/welcome');
+      }
 
     } catch (e) {
       setState(() => isSaving = false);
@@ -278,18 +282,19 @@ class _ProfilePageState extends State<ProfilePage> {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: screenWidth * 0.01),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             flex: 1,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Flexible(
                   child: Text(
                     label,
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                     style: GoogleFonts.urbanist(
-                      fontSize: screenWidth * 0.05,
+                      fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF5244F3),
                     ),
@@ -298,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 if (isRequired)
                   Text(
                     ' *',
-                    style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.04),
+                    style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.03),
                   ),
               ],
             ),
@@ -314,7 +319,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 _getHintText(label),
                 style: TextStyle(
                   color: Colors.white54,
-                  fontSize: screenWidth * 0.045,
+                  fontSize: screenWidth * 0.04,
                 ),
               ),
               icon: Icon(
@@ -329,7 +334,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Text(
                     value,
                     style: GoogleFonts.urbanist(
-                      fontSize: screenWidth * 0.05,
+                      fontSize: screenWidth * 0.04,
                       color: Colors.white,
                     ),
                   ),
@@ -351,29 +356,61 @@ class _ProfilePageState extends State<ProfilePage> {
         int? maxLength,
       }) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.02),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             flex: 1,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Flexible(
                   child: Text(
                     label,
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                     style: GoogleFonts.urbanist(
-                      fontSize: screenWidth * 0.05,
+                      fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF5244F3),
                     ),
                   ),
                 ),
+                SizedBox(width: screenWidth * 0.01),
                 if (isRequired)
                   Text(
                     ' *',
-                    style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.04),
+                    style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.03),
+                  ),
+                if (label.toLowerCase() == 'email')
+                  Tooltip(
+                    message: "Your email is requested to send you future copies of your health report.",
+                    textStyle: GoogleFonts.urbanist(
+                      color: Colors.black,
+                      fontSize: screenWidth * 0.03,
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.info_outline,
+                        color: Colors.white.withOpacity(0.8),
+                        size: screenWidth * 0.04,
+                      ),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   ),
               ],
             ),
@@ -384,7 +421,7 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: controller,
               maxLength: maxLength,
               style: GoogleFonts.urbanist(
-                fontSize: screenWidth * 0.05,
+                fontSize: screenWidth * 0.04,
                 color: Colors.white,
               ),
               decoration: InputDecoration(
@@ -393,7 +430,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 hintText: _getHintText(label),
                 hintStyle: TextStyle(
                   color: Colors.white54,
-                  fontSize: screenWidth * 0.045,
+                  fontSize: screenWidth * 0.04,
                 ),
                 counterText: "",
               ),
