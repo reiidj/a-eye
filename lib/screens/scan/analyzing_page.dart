@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:a_eye/services/firestore_service.dart';
 import 'package:a_eye/services/api_service.dart';
-import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -79,6 +78,7 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         final String classification = result['classification'];
         final String confidence = result['confidencePercentage'];
         final String explainedImageBase64 = result['explained_image_base64'] ?? '';
+        final String explanationText = result['explanation'] ?? '';
 
         // 5. Upload image to Firebase Storage and get URL
         final user = FirebaseAuth.instance.currentUser;
@@ -112,6 +112,7 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
           final scanData = {
             'result': classification,
             'confidence': confidence,
+            'explanation': explanationText, // Added this line to save the explanation
             'timestamp': Timestamp.now(),
             'imagePath': imageUrl ?? imagePath, // Use Firebase URL if available, fallback to local path
           };

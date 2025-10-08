@@ -283,6 +283,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           date: DateFormat('MMMM d, y, h:mm a').format(recentTimestamp),
           title: recentScanData['result'] ?? 'No Result',
           imageFilePath: recentScanData['imagePath'] as String? ?? '',
+          userName: widget.userName,
+          confidence: recentScanData['confidence'] as String? ?? 'N/A',
+          explanationText: recentScanData['explanation'] as String? ?? 'Explanation not available.',
         ),
 
         if (olderScans.isNotEmpty) ...[
@@ -311,6 +314,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   date: DateFormat('MMMM d, y, h:mm a').format(timestamp),
                   title: scanData['result'] ?? 'No Result',
                   imageFilePath: scanData['imagePath'] as String? ?? '',
+                  userName: widget.userName,
+                  confidence: scanData['confidence'] as String? ?? 'N/A',
+                  explanationText: scanData['explanation'] as String? ?? 'Explanation not available.',
                 );
               },
             ),

@@ -167,7 +167,9 @@ class _UploadCropPageState extends State<UploadCropPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 OutlinedButton(
-                  onPressed: widget.onBack,
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
                   style: OutlinedButton.styleFrom(
                     side:
                     const BorderSide(color: Color(0xFF5244F3), width: 2),
