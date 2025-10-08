@@ -1,16 +1,53 @@
 # a_eye
 
-Cataract classification tool.
+Cataract classification tool built with Flutter.
 
-## Getting Started
+## Development Guidelines
 
-This project is a starting point for a Flutter application.
+If you're planning to contribute, please follow this simple workflow to keep the project clean and consistent:
 
-A few resources to get you started if this is your first Flutter project:
+1. **Create a new branch** for any feature, fix, or change you’re working on.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+   * Example:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+     ```
+     git checkout -b feature/new-ui
+     ```
+2. **Work on your branch** and commit regularly with clear messages.
+3. Once you’re done, **push your branch** to the repository:
+
+   ```
+   git push origin feature/new-ui
+   ```
+4. **Make a Pull Request (PR)** to the `api` branch.
+5. Wait for review and approval before merging.
+
+Keep the `api` branch stable — no direct commits there.
+
+### Quick Setup
+
+1. Install Flutter and ensure your environment is configured.
+2. Clone this repository:
+
+   ```
+   git clone https://github.com/yourusername/a_eye.git
+   ```
+3. Navigate to the project:
+
+   ```
+   cd a_eye
+   ```
+4. Get dependencies:
+
+   ```
+   flutter pub get
+   ```
+5. Run the app:
+
+   ```
+   flutter run
+   ```
+
+---
+
+Let’s keep commits clean and branches organized — consistency makes collaboration smoother.
