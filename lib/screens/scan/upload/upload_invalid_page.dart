@@ -32,7 +32,7 @@ class UploadInvalidPage extends StatelessWidget {
                 child: Text(
                   "Image Review",
                   style: GoogleFonts.urbanist(
-                    color: const Color(0xFF5E7EA6),
+                    color: Colors.white,
                     fontSize: screenWidth * 0.0625,
                     fontWeight: FontWeight.bold,
                   ),

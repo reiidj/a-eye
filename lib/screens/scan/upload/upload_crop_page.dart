@@ -149,198 +149,204 @@ class _UploadCropPageState extends State<UploadCropPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
       body: SafeArea(
-        child: ListView(
+        child: Padding(
           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
-          children: [
-            SizedBox(height: screenHeight * 0.02),
-            // Header
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  "Crop Image",
-                  style: GoogleFonts.urbanist(
-                    color: Colors.white,
-                    fontSize: screenWidth * 0.06,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.remove_red_eye_outlined,
-                          color: Colors.white),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Drag, zoom, and position your eye within the guide.",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.urbanist(
-                              fontSize: screenWidth * 0.04, color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: screenHeight * 0.03),
-
-            // Cropper
-            if (_imageReady)
-              SizedBox(
-                height: screenHeight * 0.45,
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    Crop(
-                      image: _imageData,
-                      controller: _cropController,
-                      onCropped: _onCropped,
-                      interactive: true,
-                      fixArea: true,
-                      aspectRatio: 1,
-                      withCircleUi: false,
-                      baseColor: Colors.black,
-                      maskColor: Colors.black.withOpacity(0.6),
-                      radius: 8,
-                      initialSize: 1,
-                      initialArea: null,
-                      cornerDotBuilder: (size, edgeAlignment) =>
-                      const SizedBox.shrink(),
-                    ),
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: CrosshairPainter(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              SizedBox(
-                height: screenHeight * 0.45,
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        color: Color(0xFF5244F3),
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        "Loading image...",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            SizedBox(height: screenHeight * 0.04),
-
-            // Buttons
-            OutlinedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/cropGuide');
-              },
-              style: OutlinedButton.styleFrom(
-                side:
-                const BorderSide(color: Color(0xFF5244F3), width: 2),
-                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.018),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-              ),
-              child: Text(
-                "Crop Guide",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.urbanist(
-                    fontSize: screenWidth * 0.045,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.02),
-            OutlinedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-              ),
-              child: Text(
-                "Re-Upload Image",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.urbanist(
-                    fontSize: screenWidth * 0.045,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.02),
-            ElevatedButton(
-              onPressed: _imageReady && !_isCropping
-                  ? () {
-                setState(() => _isCropping = true);
-                _cropController.crop();
-              }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _imageReady && !_isCropping
-                    ? const Color(0xFF5244F3)
-                    : Colors.grey,
-                padding:
-                EdgeInsets.symmetric(vertical: screenHeight * 0.015),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            children: [
+              SizedBox(height: screenHeight * 0.02),
+              // Header
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (_isCropping)
-                    const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      height: 40,
-                      width: 35,
-                      child: Image.asset(
-                        'assets/images/Eye Scan 2.png',
-                        fit: BoxFit.contain,
-                        color: Colors.white,
-                      ),
-                    ),
-                  const SizedBox(width: 12),
                   Text(
-                    _isCropping ? "Processing..." : "Analyze with A-Eye",
+                    "Crop Image",
                     style: GoogleFonts.urbanist(
-                      fontSize: screenWidth * 0.05,
-                      fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      fontSize: screenWidth * 0.06,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.remove_red_eye_outlined,
+                            color: Colors.white),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Drag, zoom, and position your eye within the guide.",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.urbanist(
+                                fontSize: screenWidth * 0.04, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-            SizedBox(height: screenHeight * 0.03)
-          ],
+              SizedBox(height: screenHeight * 0.03),
+
+              // Cropper
+              if (_imageReady)
+                SizedBox(
+                  height: screenHeight * 0.45,
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      Crop(
+                        image: _imageData,
+                        controller: _cropController,
+                        onCropped: _onCropped,
+                        interactive: true,
+                        fixArea: true,
+                        aspectRatio: 1,
+                        withCircleUi: false,
+                        baseColor: Colors.black,
+                        maskColor: Colors.black.withOpacity(0.6),
+                        radius: 8,
+                        initialSize: 1,
+                        initialArea: null,
+                        cornerDotBuilder: (size, edgeAlignment) =>
+                        const SizedBox.shrink(),
+                      ),
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            painter: CrosshairPainter(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                SizedBox(
+                  height: screenHeight * 0.45,
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Color(0xFF5244F3),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          "Loading image...",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              const Spacer(),
+
+              // Buttons
+              // Wrapped button in SizedBox to enforce full width
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  child: Text(
+                    "Re-Upload Image",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.urbanist(
+                        fontSize: screenWidth * 0.045,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              // Wrapped button in SizedBox to enforce full width
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _imageReady && !_isCropping
+                      ? () {
+                    setState(() => _isCropping = true);
+                    _cropController.crop();
+                  }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _imageReady && !_isCropping
+                        ? const Color(0xFF5244F3)
+                        : Colors.grey,
+                    padding:
+                    EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isCropping)
+                        const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          height: 40,
+                          width: 35,
+                          child: Image.asset(
+                            'assets/images/Eye Scan 2.png',
+                            fit: BoxFit.contain,
+                            color: Colors.white,
+                          ),
+                        ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _isCropping ? "Processing..." : "Analyze with A-Eye",
+                        style: GoogleFonts.urbanist(
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/cropGuide');
+                },
+                child: Text(
+                  "Crop Guide",
+                  style: GoogleFonts.urbanist(
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF5244F3),
+                    decorationColor: const Color(0xFF5244F3),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.01)
+            ],
+          ),
         ),
       ),
     );

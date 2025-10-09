@@ -58,6 +58,8 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       final ApiService apiService = ApiService();
       final Map<String, dynamic> result = await apiService.classifyAndExplainImage(imagePath);
 
+      print('[DEBUG] API Result: $result'); // Debug print
+
       // 3. Handle the response
       if (result.containsKey('error')) {
         // --- ERROR PATH ---
@@ -74,12 +76,14 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
 
       } else {
         // --- SUCCESS PATH ---
-        // 4. Extract the data from the result
-        final String classification = result['classification'];
+        // 4. Extract the data from the result with safe casting
+        final String classification = result['classification'] ?? 'Unknown';
 
-        // FIXED: Get confidence and classificationScore as doubles directly
-        final double confidence = result['confidence'];
-        final double classificationScore = result['classificationScore'];
+        // FIXED: Safe conversion to double with null checks and type handling
+        final double confidence = _toDouble(result['confidence']) ?? 0.0;
+        final double classificationScore = _toDouble(result['classificationScore']) ?? 0.0;
+
+        print('[DEBUG] Confidence: $confidence, ClassificationScore: $classificationScore'); // Debug print
 
         final String explainedImageBase64 = result['explained_image_base64'] ?? '';
         final String explanationText = result['explanation'] ?? '';
@@ -115,7 +119,6 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         if (user != null) {
           final scanData = {
             'result': classification,
-            // FIXED: Store as string for Firestore display purposes
             'confidence': '${(confidence * 100).toStringAsFixed(2)}%',
             'classificationScore': classificationScore,
             'explanation': explanationText,
@@ -145,15 +148,14 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         }
 
         // 9. Navigate to ResultsPage
-        // FIXED: Pass doubles directly, not strings
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => ResultsPage(
                 userName: userName,
-                confidence: confidence,  // Pass as double
-                classificationScore: classificationScore,  // Pass as double
+                confidence: confidence,
+                classificationScore: classificationScore,
                 explainedImageBase64: explainedImageBase64,
                 explanationText: explanationText,
                 cataractType: cataractType,
@@ -169,10 +171,22 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         Navigator.pushReplacementNamed(
             context,
             '/uploadInvalid',
-            arguments: {'reason': 'A critical error occurred.'}
+            arguments: {'reason': 'A critical error occurred: $e'}
         );
       }
     }
+  }
+
+  // Helper method to safely convert any numeric type to double
+  double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    return null;
   }
 
   @override
