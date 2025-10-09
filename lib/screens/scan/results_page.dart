@@ -67,7 +67,7 @@ class ResultsPage extends StatelessWidget {
                   child: Text(
                     "Eye Health Report",
                     style: GoogleFonts.urbanist(
-                      color: const Color(0xFF5E7EA6),
+                      color: Colors.white,
                       fontSize: screenWidth * 0.0625,
                       fontWeight: FontWeight.bold,
                     ),
@@ -144,22 +144,6 @@ class ResultsPage extends StatelessWidget {
             color: const Color(0xFF5244F3),
             fontSize: screenWidth * 0.08,
             fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: screenWidth * 0.03),
-        Text(
-          "Raw Classification Score",
-          style: GoogleFonts.urbanist(
-            color: Colors.white54,
-            fontSize: screenWidth * 0.035,
-          ),
-        ),
-        Text(
-          '(${(classificationScore * 100).toStringAsFixed(2)}% used to determine maturity)',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.urbanist(
-            color: Colors.white54,
-            fontSize: screenWidth * 0.035,
           ),
         ),
       ],
