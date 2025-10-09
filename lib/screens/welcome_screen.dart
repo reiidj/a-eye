@@ -268,6 +268,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final recentScanData = mostRecentScan.data() as Map<String, dynamic>;
     final recentTimestamp = (recentScanData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
 
+    // FIXED: Helper function to safely format classificationScore
+    String _formatClassificationScore(dynamic score) {
+      if (score == null) return 'N/A';
+      if (score is String) return score;
+      if (score is num) return '${(score * 100).toStringAsFixed(2)}%';
+      return score.toString();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -285,6 +293,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           imageFilePath: recentScanData['imagePath'] as String? ?? '',
           userName: widget.userName,
           confidence: recentScanData['confidence'] as String? ?? 'N/A',
+          classificationScore: _formatClassificationScore(recentScanData['classificationScore']), // FIXED: Added
           explanationText: recentScanData['explanation'] as String? ?? 'Explanation not available.',
         ),
 
@@ -295,7 +304,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             style: GoogleFonts.urbanist(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
-                color: Colors.white70),
+                color: Colors.white),
           ),
           const SizedBox(height: 16),
           Container(
@@ -316,6 +325,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   imageFilePath: scanData['imagePath'] as String? ?? '',
                   userName: widget.userName,
                   confidence: scanData['confidence'] as String? ?? 'N/A',
+                  classificationScore: _formatClassificationScore(scanData['classificationScore']), // FIXED: Added
                   explanationText: scanData['explanation'] as String? ?? 'Explanation not available.',
                 );
               },

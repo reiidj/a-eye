@@ -279,7 +279,7 @@ class _ResultCardState extends State<ResultCard> {
                               child: Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.symmetric(
-                                  horizontal: screenWidth * 0.03,
+                                  horizontal: screenWidth * 0.027, // specifically 27 so it doesnt overflow
                                   vertical: screenHeight * 0.012,
                                 ),
                                 decoration: BoxDecoration(

@@ -260,7 +260,12 @@ class ResultsPage extends StatelessWidget {
   Widget _buildMedicalDisclaimer(double screenWidth) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(screenWidth * 0.05),
+      padding: EdgeInsets.fromLTRB(
+        screenWidth * 0.08,
+        screenWidth * 0.025,
+        screenWidth * 0.08,
+        screenWidth * 0.025,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF131A21),
         borderRadius: BorderRadius.circular(16),
@@ -277,13 +282,64 @@ class ResultsPage extends StatelessWidget {
             ),
           ),
           SizedBox(height: screenWidth * 0.02),
-          Text(
-            "This app is for informational purposes only and does not replace a licensed ophthalmologist's diagnosis.",
+          RichText(
             textAlign: TextAlign.center,
-            style: GoogleFonts.urbanist(
-              fontSize: screenWidth * 0.04,
-              color: Colors.white,
-              height: 1.5,
+            text: TextSpan(
+              style: GoogleFonts.urbanist(
+                fontSize: screenWidth * 0.0375,
+                color: Colors.white,
+              ),
+              children: const [
+                TextSpan(text: "This app is for informational purposes only. It does "),
+                TextSpan(
+                  text: "not replace a licensed ophthalmologist's diagnosis.",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: screenWidth * 0.04),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(screenWidth * 0.03),
+            decoration: BoxDecoration(
+              color: const Color(0xFF242443),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.campaign_rounded,
+                  color: const Color(0xFF5244F3),
+                  size: screenWidth * 0.08,
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.urbanist(
+                        fontSize: screenWidth * 0.0375,
+                        color: Colors.white,
+                      ),
+                      children: const [
+                        TextSpan(text: "Visit "),
+                        TextSpan(
+                          text: "pao.org.ph",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontStyle: FontStyle.italic,
+                            color: Color(0xFF8BC36A),
+                          ),
+                        ),
+                        TextSpan(
+                          text: " to find certified eye specialists for proper eye analysis.",
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -300,7 +356,7 @@ class ResultsPage extends StatelessWidget {
             child: ElevatedButton.icon(
               icon: const Icon(Icons.group_add_outlined),
               label: Text(
-                "Find an Eye Specialist",
+                "Notify Eye Specialist",
                 style: GoogleFonts.urbanist(
                   fontSize: screenWidth * 0.045,
                   fontWeight: FontWeight.w600,
@@ -317,12 +373,12 @@ class ResultsPage extends StatelessWidget {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20)),
-                padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
+                padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
               ),
             ),
           ),
         if (cataractType == CataractType.mature)
-          SizedBox(height: screenWidth * 0.03),
+          SizedBox(height: screenWidth * 0.05),
         _buildConfirmExitButton(context, screenWidth),
       ],
     );
@@ -337,7 +393,7 @@ class ResultsPage extends StatelessWidget {
         label: Text(
           "Save Report & Exit",
           style: GoogleFonts.urbanist(
-            fontSize: screenWidth * 0.045,
+            fontSize: screenWidth * 0.05,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -349,7 +405,7 @@ class ResultsPage extends StatelessWidget {
           foregroundColor: Colors.white,
           shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
+          padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
         ),
       ),
     );
