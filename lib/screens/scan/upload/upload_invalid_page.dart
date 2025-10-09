@@ -89,7 +89,11 @@ class UploadInvalidPage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: onBack ?? () => Navigator.pop(context),
+                        onPressed: onBack ?? () => Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/uploadSelect',
+                              (Route<dynamic> route) => false,
+                        ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                           padding: EdgeInsets.symmetric(

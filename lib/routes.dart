@@ -29,6 +29,7 @@ import 'package:a_eye/screens/scan/upload/upload_crop_page.dart';
 import 'package:a_eye/screens/scan/upload/upload_select_page.dart';
 import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
 
+import 'package:a_eye/screens/crop_guide_page.dart';
 import 'package:a_eye/auth_check_screen.dart';
 
 CataractType _determineCataractType(String classification) {
@@ -159,7 +160,6 @@ final Map<String, WidgetBuilder> appRoutes = {
     final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     return CropImagePage(
       imagePath: args['imagePath'] as String,
-      selectedEye: args['selectedEye'] as String,
     );
   },
 
@@ -167,7 +167,6 @@ final Map<String, WidgetBuilder> appRoutes = {
     final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     return InvalidImagePage(
       imagePath: args['imagePath'] as String,
-      selectedEye: args['selectedEye'] as String,
       reason: args['reason'] as String,
       onBack: () => Navigator.of(context).pop(),
     );
@@ -185,28 +184,26 @@ final Map<String, WidgetBuilder> appRoutes = {
   },
 
   '/results': (context) {
-    // 1. Get the single 'analysisResult' map passed as an argument.
     final analysisResult = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
-    // 2. Extract the data using the correct keys from your API response.
     final String classification = analysisResult['classification'];
-    final String confidence = analysisResult['confidencePercentage'];
+
+    // FIXED: Parse as double, not String
+    final double confidence = (analysisResult['confidence'] as num).toDouble();
+    final double classificationScore = (analysisResult['classificationScore'] as num).toDouble();
+
     final String explainedImageBase64 = analysisResult['explained_image_base64'];
     final String explanationText = analysisResult['explanation'];
-    // Note: 'userName' is not in the API response, so we handle it safely.
-    // You will need to pass it along with the analysisResult if you need it.
     final String userName = analysisResult['userName'] ?? 'Guest';
 
-    // 3. Use your helper function to determine the cataract type.
     final CataractType cataractType = _determineCataractType(classification);
 
-    // 4. Pass the processed data to your ResultsPage.
-    // IMPORTANT: Your ResultsPage must be updated to accept these parameters.
     return ResultsPage(
       userName: userName,
-      confidence: confidence, // e.g., "98.76%"
-      explainedImageBase64: explainedImageBase64, // The image string
-      explanationText: explanationText, // The detailed report
+      confidence: confidence, // Now passing as double (e.g., 0.9876)
+      classificationScore: classificationScore, // Now passing as double (e.g., 0.7543)
+      explainedImageBase64: explainedImageBase64,
+      explanationText: explanationText,
       cataractType: cataractType,
     );
   },
@@ -239,4 +236,8 @@ final Map<String, WidgetBuilder> appRoutes = {
       onBack: () => Navigator.pop(context),
     );
   },
+
+  '/cropGuide': (context) => const CropGuidePage(),
+
+
 };

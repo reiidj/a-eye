@@ -13,9 +13,10 @@ class ResultCard extends StatefulWidget {
   final String? imageFilePath;
   final bool showLabel;
 
-  // New parameters needed for PDF generation
+  // FIXED: Updated parameters to match PDF builder requirements
   final String? userName;
   final String? confidence;
+  final String? classificationScore; // Added classificationScore
   final String? explanationText;
 
   const ResultCard({
@@ -27,6 +28,7 @@ class ResultCard extends StatefulWidget {
     this.showLabel = false,
     this.userName,
     this.confidence,
+    this.classificationScore, // Added to constructor
     this.explanationText,
   });
 
@@ -40,8 +42,11 @@ class _ResultCardState extends State<ResultCard> {
   Future<void> _generateAndSharePdf(BuildContext context) async {
     if (_isGenerating) return;
 
-    // Check if we have the required data
-    if (widget.userName == null || widget.confidence == null || widget.explanationText == null) {
+    // FIXED: Check for all required data including classificationScore
+    if (widget.userName == null ||
+        widget.confidence == null ||
+        widget.classificationScore == null ||
+        widget.explanationText == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -83,11 +88,12 @@ class _ResultCardState extends State<ResultCard> {
         ),
       );
 
-      // Generate PDF
+      // FIXED: Generate PDF with all required parameters including classificationScore
       final pdfBytes = await generateReportPdf(
         userName: widget.userName!,
         classification: widget.title,
         confidence: widget.confidence!,
+        classificationScore: widget.classificationScore!, // Added classificationScore
         explanationText: widget.explanationText!,
       );
 
@@ -149,7 +155,6 @@ class _ResultCardState extends State<ResultCard> {
     final dateFontSize = screenWidth * 0.0375;
     final titleFontSize = screenWidth * 0.05;
     final warningFontSize = screenWidth * 0.035;
-    final hintFontSize = screenWidth * 0.035;
     final loadingFontSize = screenWidth * 0.035;
 
     // Responsive padding and spacing
@@ -159,7 +164,6 @@ class _ResultCardState extends State<ResultCard> {
     final imageSpacing = screenWidth * 0.04;
     final textSpacing = screenHeight * 0.008;
     final warningTopPadding = screenHeight * 0.015;
-    final hintTopPadding = screenHeight * 0.02;
 
     final imageWidget = widget.imageFilePath != null
         ? Image.file(

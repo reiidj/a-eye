@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'package:a_eye/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image/image.dart' as img;
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
@@ -73,35 +73,37 @@ class _CameraPageState extends State<CameraPage> {
         minHeight: 1024,
       );
 
-      final apiService = ApiService();
-      final validationResult = await apiService.validateImage(compressed!.path);
-
-      if (!mounted) return;
-
-      if (validationResult['isValid'] == true) {
-        Navigator.pushNamed(
-          context,
-          '/crop',
-          arguments: {
-            'imagePath': compressed.path,
-            'selectedEye': _selectedEye,
-          },
-        );
-      } else {
-        Navigator.pushNamed(
-          context,
-          '/invalid',
-          arguments: {
-            'imagePath': compressed.path,
-            'selectedEye': _selectedEye,
-            'reason': validationResult['reason'],
-          },
-        );
+      if (_availableCameras[_selectedCameraIndex].lensDirection == CameraLensDirection.front) {
+        final bytes = await File(compressed!.path).readAsBytes();
+        final decoded = img.decodeImage(bytes);
+        if (decoded != null) {
+          final flipped = img.flipHorizontal(decoded);
+          final flippedPath = "${file.parent.path}/flipped_${DateTime.now().millisecondsSinceEpoch}.jpg";
+          await File(flippedPath).writeAsBytes(img.encodeJpg(flipped, quality: 85));
+          Navigator.pushNamed(
+            context,
+            '/crop',
+            arguments: {
+              'imagePath': flippedPath,
+              'selectedEye': _selectedEye,
+            },
+          );
+          return;
+        }
       }
+
+      Navigator.pushNamed(
+        context,
+        '/crop',
+        arguments: {
+          'imagePath': compressed!.path,
+          'selectedEye': _selectedEye,
+        },
+      );
     } catch (e, st) {
-      print('[Camera] Capture or validation failed: $e');
+      print('[Camera] Capture failed: $e');
       print(st);
-      if (mounted) setState(() => _errorMessage = 'Capture or validation failed: $e');
+      if (mounted) setState(() => _errorMessage = 'Capture failed: $e');
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -228,7 +230,7 @@ class _CameraPageState extends State<CameraPage> {
                           ),
                         ),
                       ),
-                      SizedBox(height: screenHeight * 0.04),
+                      SizedBox(height: screenHeight * 0.02),
                       OutlinedButton(
                         onPressed: () {
                           Navigator.pushNamed(context, '/guide');
@@ -252,7 +254,7 @@ class _CameraPageState extends State<CameraPage> {
                           ),
                         ),
                       ),
-                      SizedBox(height: screenHeight * 0.04),
+                      SizedBox(height: screenHeight * 0.05),
                     ],
                   ),
                 ),

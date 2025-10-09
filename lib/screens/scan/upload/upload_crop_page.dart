@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
+import 'package:a_eye/services/api_service.dart';
+import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:crop_your_image/crop_your_image.dart';
-import 'dart:typed_data';
+import 'package:image/image.dart' as img;
 
 class UploadCropPage extends StatefulWidget {
   final String imagePath;
@@ -33,69 +36,154 @@ class _UploadCropPageState extends State<UploadCropPage> {
   }
 
   Future<void> _loadImage() async {
-    final file = File(widget.imagePath);
-    _imageData = await file.readAsBytes();
-    setState(() {
-      _imageReady = true;
-    });
+    try {
+      final file = File(widget.imagePath);
+      final bytes = await file.readAsBytes();
+
+      final decoded = img.decodeImage(bytes);
+      if (decoded != null) {
+        img.Image normalized = decoded;
+
+        if (normalized.width > 2048 || normalized.height > 2048) {
+          normalized = img.copyResize(
+            normalized,
+            width: normalized.width > normalized.height ? 2048 : null,
+            height: normalized.height > normalized.width ? 2048 : null,
+          );
+        }
+
+        _imageData = Uint8List.fromList(img.encodeJpg(normalized, quality: 92));
+      } else {
+        _imageData = bytes;
+      }
+
+      if (mounted) {
+        setState(() => _imageReady = true);
+      }
+    } catch (e) {
+      print('⚠ Image load error: $e');
+      try {
+        final file = File(widget.imagePath);
+        _imageData = await file.readAsBytes();
+        if (mounted) {
+          setState(() => _imageReady = true);
+        }
+      } catch (fallbackError) {
+        print(' Fatal image load error: $fallbackError');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to load image')),
+          );
+          Navigator.pop(context);
+        }
+      }
+    }
   }
 
   void _onCropped(Uint8List croppedData) async {
-    // You can still save the file if you need it elsewhere
-    final tempPath = '${Directory.systemTemp.path}/cropped_image_${DateTime.now().millisecondsSinceEpoch}.png';
-    await File(tempPath).writeAsBytes(croppedData);
+    try {
+      if (croppedData.isEmpty) {
+        throw Exception('Cropped image is empty');
+      }
 
-    if (mounted) {
-      // FIX: Pass the image BYTES ('imageBytes') to the next screen.
-      Navigator.pushNamed(context, '/analyzing', arguments: {
-        'imageBytes': croppedData,
-        'imagePath': tempPath,
-      });
+      final decoded = img.decodeImage(croppedData);
+      if (decoded == null) {
+        throw Exception('Failed to decode cropped image');
+      }
+
+      if (decoded.width < 50 || decoded.height < 50) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Cropped area is too small. Please zoom in more.')),
+          );
+        }
+        setState(() => _isCropping = false);
+        return;
+      }
+
+      final jpegBytes =
+      Uint8List.fromList(img.encodeJpg(decoded, quality: 92));
+
+      final tempPath =
+          '${Directory.systemTemp.path}/cropped_eye_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await File(tempPath).writeAsBytes(jpegBytes);
+
+      final ApiService apiService = ApiService();
+      final validationResult = await apiService.validateImage(tempPath);
+
+      if (!mounted) return;
+
+      if (validationResult['isValid'] == true) {
+        Navigator.pushNamed(context, '/analyzing', arguments: {
+          'imageBytes': jpegBytes,
+          'imagePath': tempPath,
+        });
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UploadInvalidPage(
+              reason: validationResult['reason'] ?? 'Validation failed',
+              imagePath: tempPath,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Crop processing error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error processing image: $e')),
+        );
+        setState(() => _isCropping = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // The build method remains unchanged...
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
-      body: Column(
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(34, 40, 34, 24),
-            child: Column(
+      body: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+          children: [
+            SizedBox(height: screenHeight * 0.02),
+            // Header
+            Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   "Crop Image",
                   style: GoogleFonts.urbanist(
-                    color: const Color(0xFF5E7EA6),
-                    fontSize: 25,
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.06,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: screenHeight * 0.02),
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(32),
                   ),
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Icon(Icons.remove_red_eye_outlined,
                           color: Colors.white),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           "Drag, zoom, and position your eye within the guide.",
                           textAlign: TextAlign.center,
                           style: GoogleFonts.urbanist(
-                              fontSize: 17, color: Colors.white),
+                              fontSize: screenWidth * 0.04, color: Colors.white),
                         ),
                       ),
                     ],
@@ -103,157 +191,162 @@ class _UploadCropPageState extends State<UploadCropPage> {
                 ),
               ],
             ),
-          ),
+            SizedBox(height: screenHeight * 0.03),
 
-          // Cropper with enhanced controls
-          if (_imageReady)
-            SizedBox(
-              height: screenHeight * 0.45,
-              width: double.infinity,
-              child: Stack(
-                children: [
-                  Crop(
-                    image: _imageData,
-                    controller: _cropController,
-                    onCropped: _onCropped,
-                    interactive: true,
-                    fixArea: true,
-                    aspectRatio: 1,
-                    withCircleUi: false,
-                    baseColor: Colors.black,
-                    maskColor: Colors.black.withOpacity(0.6),
-                    radius: 8,
-                    initialSize: 1,
-                    initialArea: null,
-                    cornerDotBuilder: (size, edgeAlignment) =>
-                    const SizedBox.shrink(),
-                  ),
-                  // Custom crosshair overlay - ignore pointer events
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: CrosshairPainter(),
+            // Cropper
+            if (_imageReady)
+              SizedBox(
+                height: screenHeight * 0.45,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    Crop(
+                      image: _imageData,
+                      controller: _cropController,
+                      onCropped: _onCropped,
+                      interactive: true,
+                      fixArea: true,
+                      aspectRatio: 1,
+                      withCircleUi: false,
+                      baseColor: Colors.black,
+                      maskColor: Colors.black.withOpacity(0.6),
+                      radius: 8,
+                      initialSize: 1,
+                      initialArea: null,
+                      cornerDotBuilder: (size, edgeAlignment) =>
+                      const SizedBox.shrink(),
+                    ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: CrosshairPainter(),
+                        ),
                       ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              SizedBox(
+                height: screenHeight * 0.45,
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: Color(0xFF5244F3),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        "Loading image...",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            SizedBox(height: screenHeight * 0.04),
+
+            // Buttons
+            OutlinedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/cropGuide');
+              },
+              style: OutlinedButton.styleFrom(
+                side:
+                const BorderSide(color: Color(0xFF5244F3), width: 2),
+                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.018),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+              ),
+              child: Text(
+                "Crop Guide",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.urbanist(
+                    fontSize: screenWidth * 0.045,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+              ),
+              child: Text(
+                "Re-Upload Image",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.urbanist(
+                    fontSize: screenWidth * 0.045,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+            ElevatedButton(
+              onPressed: _imageReady && !_isCropping
+                  ? () {
+                setState(() => _isCropping = true);
+                _cropController.crop();
+              }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _imageReady && !_isCropping
+                    ? const Color(0xFF5244F3)
+                    : Colors.grey,
+                padding:
+                EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isCropping)
+                    const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 40,
+                      width: 35,
+                      child: Image.asset(
+                        'assets/images/Eye Scan 2.png',
+                        fit: BoxFit.contain,
+                        color: Colors.white,
+                      ),
+                    ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _isCropping ? "Processing..." : "Analyze with A-Eye",
+                    style: GoogleFonts.urbanist(
+                      fontSize: screenWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
-            )
-          else
-            SizedBox(
-              height: screenHeight * 0.45,
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Color(0xFF5244F3),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      "Loading image...",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
             ),
-          const SizedBox(height: 40),
-
-          // Buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side:
-                    const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: Text(
-                    "Re-Upload Image",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.urbanist(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-
-          // Analyze Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _imageReady && !_isCropping
-                    ? () {
-                  setState(() => _isCropping = true);
-                  _cropController.crop();
-                }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _imageReady && !_isCropping
-                      ? const Color(0xFF5244F3)
-                      : Colors.grey,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_isCropping)
-                      const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        height: 40,
-                        width: 35,
-                        child: Image.asset(
-                          'assets/images/Eye Scan 2.png',
-                          fit: BoxFit.contain,
-                          color: Colors.white,
-                        ),
-                      ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _isCropping ? "Processing..." : "Analyze with A-Eye",
-                      style: GoogleFonts.urbanist(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+            SizedBox(height: screenHeight * 0.03)
+          ],
+        ),
       ),
     );
   }
 }
-// ... (CrosshairPainter remains the same)
+
 class CrosshairPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -273,9 +366,9 @@ class CrosshairPainter extends CustomPainter {
     const double dashWidth = 15;
     const double dashSpace = 10;
 
-    // Draw dashed lines extending from center
-    for (double i = start; i < size.width / 2 - 20; i += dashWidth + dashSpace) {
-      // Horizontal dashed lines
+    for (double i = start;
+    i < size.width / 2 - 20;
+    i += dashWidth + dashSpace) {
       canvas.drawLine(
         Offset(centerX + i, centerY),
         Offset(centerX + i + dashWidth, centerY),
@@ -288,8 +381,9 @@ class CrosshairPainter extends CustomPainter {
       );
     }
 
-    for (double i = start; i < size.height / 2 - 20; i += dashWidth + dashSpace) {
-      // Vertical dashed lines
+    for (double i = start;
+    i < size.height / 2 - 20;
+    i += dashWidth + dashSpace) {
       canvas.drawLine(
         Offset(centerX, centerY + i),
         Offset(centerX, centerY + i + dashWidth),
@@ -302,7 +396,6 @@ class CrosshairPainter extends CustomPainter {
       );
     }
 
-    // Draw solid center crosshair
     canvas.drawLine(
       Offset(centerX - armLength, centerY),
       Offset(centerX + armLength, centerY),
@@ -314,7 +407,6 @@ class CrosshairPainter extends CustomPainter {
       solidPaint,
     );
 
-    // Draw center circle
     canvas.drawCircle(
       Offset(centerX, centerY),
       6,

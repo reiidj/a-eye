@@ -76,7 +76,11 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         // --- SUCCESS PATH ---
         // 4. Extract the data from the result
         final String classification = result['classification'];
-        final String confidence = result['confidencePercentage'];
+
+        // FIXED: Get confidence and classificationScore as doubles directly
+        final double confidence = result['confidence'];
+        final double classificationScore = result['classificationScore'];
+
         final String explainedImageBase64 = result['explained_image_base64'] ?? '';
         final String explanationText = result['explanation'] ?? '';
 
@@ -111,10 +115,12 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         if (user != null) {
           final scanData = {
             'result': classification,
-            'confidence': confidence,
-            'explanation': explanationText, // Added this line to save the explanation
+            // FIXED: Store as string for Firestore display purposes
+            'confidence': '${(confidence * 100).toStringAsFixed(2)}%',
+            'classificationScore': classificationScore,
+            'explanation': explanationText,
             'timestamp': Timestamp.now(),
-            'imagePath': imageUrl ?? imagePath, // Use Firebase URL if available, fallback to local path
+            'imagePath': imageUrl ?? imagePath,
           };
           await FirestoreService().addScan(user.uid, scanData);
         }
@@ -139,15 +145,17 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
         }
 
         // 9. Navigate to ResultsPage
+        // FIXED: Pass doubles directly, not strings
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => ResultsPage(
                 userName: userName,
-                confidence: confidence,
+                confidence: confidence,  // Pass as double
+                classificationScore: classificationScore,  // Pass as double
                 explainedImageBase64: explainedImageBase64,
-                explanationText: result['explanation'] ?? '',
+                explanationText: explanationText,
                 cataractType: cataractType,
               ),
             ),

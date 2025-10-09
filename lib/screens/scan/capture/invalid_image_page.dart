@@ -4,14 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 class InvalidImagePage extends StatelessWidget {
   final String imagePath;
-  final String selectedEye;
   final String reason;
   final VoidCallback? onBack;
 
   const InvalidImagePage({
     super.key,
     required this.imagePath,
-    required this.selectedEye,
     required this.reason,
     this.onBack,
   });
