@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'name_input_page.dart'; // next page which is name input page
+import 'package:gradient_slide_to_act/gradient_slide_to_act.dart'; // Keeping this import as requested
 
 class LandingPage extends StatelessWidget {
   final VoidCallback onNext;
@@ -9,82 +9,129 @@ class LandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen dimensions for responsive UI
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    const baseColor = Color(0xFF5244F3);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // Background Image
           const Image(
             image: AssetImage('assets/images/Eye Sprite Page 1.png'),
             fit: BoxFit.contain,
-            // Added alignment to center the image if it doesn't fill the whole screen
             alignment: Alignment(0.0, -1),
           ),
 
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                  Colors.black
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.5, 0.8, 1.0],
+              ),
+            ),
+          ),
 
           // Left-aligned and vertically adjusted overlay text
           Align(
-            alignment: Alignment(-1.0, 0.45), // X = -1.0 (left), Y = the bigger the y the lower the text
+            alignment: const Alignment(-1.0, 0.45),
             child: Padding(
-              padding: const EdgeInsets.only(left: 20.0),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'A-EYE:',
+                  ShaderMask(
+                    blendMode: BlendMode.srcIn,
+                    shaderCallback: (bounds) => LinearGradient(
+                      colors: [
+                        baseColor,
+                        Color.lerp(baseColor, Colors.white, 0.4)!,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(
+                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                    ),
+                    child: Text(
+                      'A-EYE:',
+                      textAlign: TextAlign.left,
+                      style: GoogleFonts.urbanist(
+                        color: Colors.white,
+                        fontSize: screenWidth * 0.18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  RichText(
                     textAlign: TextAlign.left,
-                    style: GoogleFonts.urbanist(
-                      color: Colors.white,
-                      fontSize: 70,
+                    text: TextSpan(
+                      style: GoogleFonts.urbanist(
+                        // Responsive font size
+                        fontSize: screenWidth * 0.15,
+                      ),
+                      children: const [
+                        TextSpan(
+                          text: 'cataract ',
+                          style: TextStyle(color: baseColor),
+                        ),
+                        TextSpan(
+                          text: 'maturity ',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextSpan(
+                          text: 'classification',
+                          style: TextStyle(color: baseColor),
+                        ),
+                      ],
                     ),
                   ),
-                const SizedBox(height: 3),
-                RichText(
-                  textAlign: TextAlign.left,
-                  text: TextSpan(
-                    style: GoogleFonts.urbanist(
-                      fontSize: 60,
-                    ),
-                    children: const [
-                      TextSpan(
-                        text: 'cataract ',
-                        style: TextStyle(color: Color(0xFF5244F3)),
-                      ),
-                      TextSpan(
-                        text: 'maturity ',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      TextSpan(
-                        text: 'classification',
-                        style: TextStyle(color: Color(0xFF5244F3)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          ),
 
-          // Bottom Next Button
+          // --- Slider Fixed ---
           Positioned(
-            bottom: 50,
-            right: 20,
-            child: ElevatedButton(
-              onPressed: onNext,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5244F3),
+            left: screenWidth * 0.05,
+            right: screenWidth * 0.1,
+            bottom: screenHeight * 0.06,
+            child: GradientSlideToAct(
+              height: screenHeight * 0.065,
+              text: 'Slide to Begin',
+              textStyle: GoogleFonts.urbanist(
+                fontSize: screenWidth * 0.05,
+                color: Colors.white,
+                fontWeight: FontWeight.w400,
               ),
-              child: Text(
-                'Next',
-                style: GoogleFonts.urbanist(fontSize: 20, color: Colors.white),
-              ),
+              backgroundColor: const Color(0xff080D2B),
+              onSubmit: onNext,
+
+              dragableIconBackgroundColor: Colors.white,
+              dragableIcon: Icons.double_arrow,
+
+              gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xff484EC6),
+                    Color(0xff5244F3),
+                  ]),
             ),
           ),
-
         ],
       ),
     );
   }
 }
+
