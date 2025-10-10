@@ -130,14 +130,14 @@ class ResultsPage extends StatelessWidget {
   Widget _buildScoreDisplays(double screenWidth) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.05,
+        horizontal: screenWidth * 0.1,
         vertical: screenWidth * 0.01,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05), // A subtle background tint
-        borderRadius: BorderRadius.circular(12), // Rounded corners
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(32),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1), // A faint border
+          color: Colors.white.withOpacity(0.1),
           width: 1,
         ),
       ),
@@ -163,7 +163,7 @@ class ResultsPage extends StatelessWidget {
             '${(confidence * 100).toStringAsFixed(1)}%', // Using 1 decimal for a cleaner look
             style: GoogleFonts.urbanist(
               color: const Color(0xFF5244F3),
-              fontSize: screenWidth * 0.07,
+              fontSize: screenWidth * 0.065,
               fontWeight: FontWeight.bold,
               shadows: [ // A subtle glow effect for emphasis
                 Shadow(
