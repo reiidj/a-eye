@@ -40,7 +40,7 @@ class CropGuidePage extends StatelessWidget {
               description:
               "Ensure the eye is centered and fills the entire frame. The eyelids should be open, and the pupil clearly visible.",
               imagePath:
-              'assets/images/good_crop_example.png', // Replace with your actual image path
+              'assets/images/Good_Crop.png',
               isGoodExample: true,
             ),
             SizedBox(height: screenHeight * 0.04),
@@ -50,7 +50,7 @@ class CropGuidePage extends StatelessWidget {
               description:
               "Avoid cropping too far out or cutting off parts of the eye. Make sure there are no obstructions like hair or reflections.",
               imagePath:
-              'assets/images/bad_crop_example.png', // Replace with your actual image path
+              'assets/images/Bad_Crop.jpg',
               isGoodExample: false,
             ),
             SizedBox(height: screenHeight * 0.05),

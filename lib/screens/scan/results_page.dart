@@ -128,25 +128,54 @@ class ResultsPage extends StatelessWidget {
   }
 
   Widget _buildScoreDisplays(double screenWidth) {
-    return Column(
-      children: [
-        Text(
-          "Confidence in Result",
-          style: GoogleFonts.urbanist(
-            color: Colors.white70,
-            fontSize: screenWidth * 0.04,
-            fontWeight: FontWeight.w600,
-          ),
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.05,
+        vertical: screenWidth * 0.01,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05), // A subtle background tint
+        borderRadius: BorderRadius.circular(12), // Rounded corners
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1), // A faint border
+          width: 1,
         ),
-        Text(
-          '${(confidence * 100).toStringAsFixed(2)}%',
-          style: GoogleFonts.urbanist(
-            color: const Color(0xFF5244F3),
-            fontSize: screenWidth * 0.08,
-            fontWeight: FontWeight.bold,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              SizedBox(width: screenWidth * 0.02),
+              Text(
+                "Confidence Score:",
+                style: GoogleFonts.urbanist(
+                  color: Colors.white,
+                  fontSize: screenWidth * 0.045,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          // Right side: The score with enhanced styling
+          Text(
+            '${(confidence * 100).toStringAsFixed(1)}%', // Using 1 decimal for a cleaner look
+            style: GoogleFonts.urbanist(
+              color: const Color(0xFF5244F3),
+              fontSize: screenWidth * 0.07,
+              fontWeight: FontWeight.bold,
+              shadows: [ // A subtle glow effect for emphasis
+                Shadow(
+                  blurRadius: 10.0,
+                  color: const Color(0xFF8BC36A).withOpacity(0.5),
+                  offset: Offset.zero,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
