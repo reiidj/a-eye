@@ -383,34 +383,44 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.03),
                   ),
                 if (label.toLowerCase() == 'email')
-                  Tooltip(
-                    message: "Your email is requested to send you future copies of your health report.",
-                    textStyle: GoogleFonts.urbanist(
-                      color: Colors.black,
-                      fontSize: screenWidth * 0.03,
+                  IconButton(
+                    icon: Icon(
+                      Icons.info_outline,
+                      color: Colors.white.withOpacity(0.8),
+                      size: screenWidth * 0.05,
                     ),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.info_outline,
-                        color: Colors.white.withOpacity(0.8),
-                        size: screenWidth * 0.04,
-                      ),
-                      onPressed: () {},
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    // The onPressed callback shows a dialog
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            backgroundColor: const Color(0xFF131A21),
+                            title: Text(
+                              "Why We Ask for Your Email",
+                              style: GoogleFonts.urbanist(color: Colors.white),
+                            ),
+                            content: Text(
+                              "Your email is requested to send you future copies of your health report.",
+                              style: GoogleFonts.urbanist(color: Colors.white70),
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                child: Text(
+                                  "OK",
+                                  style: GoogleFonts.urbanist(color: const Color(0xFF5244F3)),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(context).pop(); // Closes the dialog
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
               ],
             ),
