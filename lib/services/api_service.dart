@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
@@ -54,7 +53,7 @@ class ApiService {
         // Log the decoded response
         print('[ApiService] Decoded Response: $decoded');
 
-        // FIXED: Safe extraction with null checks and proper type handling
+        //Safe extraction with null checks and proper type handling
         return {
           'classification': decoded['classification'] ?? 'Unknown',
           'confidence': _toDouble(decoded['confidence']) ?? 0.0,

@@ -268,7 +268,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final recentScanData = mostRecentScan.data() as Map<String, dynamic>;
     final recentTimestamp = (recentScanData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
 
-    // FIXED: Helper function to safely format classificationScore
     String _formatClassificationScore(dynamic score) {
       if (score == null) return 'N/A';
       if (score is String) return score;
@@ -293,7 +292,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           imageFilePath: recentScanData['imagePath'] as String? ?? '',
           userName: widget.userName,
           confidence: recentScanData['confidence'] as String? ?? 'N/A',
-          classificationScore: _formatClassificationScore(recentScanData['classificationScore']), // FIXED: Added
+          classificationScore: _formatClassificationScore(recentScanData['classificationScore']),
           explanationText: recentScanData['explanation'] as String? ?? 'Explanation not available.',
         ),
 
@@ -325,7 +324,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   imageFilePath: scanData['imagePath'] as String? ?? '',
                   userName: widget.userName,
                   confidence: scanData['confidence'] as String? ?? 'N/A',
-                  classificationScore: _formatClassificationScore(scanData['classificationScore']), // FIXED: Added
+                  classificationScore: _formatClassificationScore(scanData['classificationScore']),
                   explanationText: scanData['explanation'] as String? ?? 'Explanation not available.',
                 );
               },

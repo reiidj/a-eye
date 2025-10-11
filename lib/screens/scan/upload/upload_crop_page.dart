@@ -249,8 +249,6 @@ class _UploadCropPageState extends State<UploadCropPage> {
 
               const Spacer(),
 
-              // Buttons
-              // Wrapped button in SizedBox to enforce full width
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(

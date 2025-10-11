@@ -8,14 +8,13 @@ import 'package:intl/intl.dart';
 Future<Uint8List> generateReportPdf({
   required String userName,
   required String classification,
-  required String confidence, // This will be the main confidence score (e.g., "98.76%")
-  required String classificationScore, // This is the new score
+  required String confidence, // This will be the main confidence score "98.76%"
+  required String classificationScore,
   required String explanationText,
 }) async {
-  // Create a new PDF document
+
   final pdf = pw.Document();
 
-  // Add a page to the document
   pdf.addPage(
     pw.Page(
       pageFormat: PdfPageFormat.a4,

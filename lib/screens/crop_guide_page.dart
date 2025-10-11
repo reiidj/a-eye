@@ -110,11 +110,10 @@ class CropGuidePage extends StatelessWidget {
           ],
         ),
         SizedBox(height: screenWidth * 0.03),
-        // This is the corrected image container
         Container(
           height: screenWidth * 0.5,
           width: double.infinity,
-          clipBehavior: Clip.antiAlias, // Clips the child to the rounded corners
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.5),
             borderRadius: BorderRadius.circular(15),

@@ -5,7 +5,6 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   // --- User Methods ---
-
   /// Adds a new user document to the 'users' collection.
   /// The document ID will be the user's unique ID (uid) from Firebase Auth.
   Future<void> addUser(String userId, Map<String, dynamic> userData) {

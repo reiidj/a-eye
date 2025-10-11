@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:gradient_slide_to_act/gradient_slide_to_act.dart'; // Keeping this import as requested
+import 'package:gradient_slide_to_act/gradient_slide_to_act.dart';
 
 class LandingPage extends StatelessWidget {
   final VoidCallback onNext;

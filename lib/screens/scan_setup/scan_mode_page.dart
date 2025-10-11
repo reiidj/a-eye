@@ -17,16 +17,13 @@ class ScanModePage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      // This allows the body's background image to extend behind the AppBar.
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // Makes the AppBar invisible
-        elevation: 0, // Removes the shadow
-        // The 'leading' widget is the conventional place for a back button.
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          // This pops the current page off the navigation stack, taking the user back.
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

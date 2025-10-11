@@ -21,12 +21,9 @@ class AgeSelectPage extends StatefulWidget {
 }
 
 class _AgeSelectPageState extends State<AgeSelectPage> {
-  // State variable to hold the user's selection
   String? _selectedAgeGroup;
 
-  /// Handles creating the user profile and navigating to the welcome screen.
   Future<void> _handleNext() async {
-    // Show a loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -35,8 +32,7 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      Navigator.pop(context); // Dismiss loading indicator
-      // Handle error: user not found
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error: Could not find user.")),
       );
@@ -241,7 +237,7 @@ class _AgeSelectPageState extends State<AgeSelectPage> {
                         child: ElevatedButton(
                           onPressed: () {
                             if (_selectedAgeGroup != null) {
-                              _handleNext(); // Call the refactored logic
+                              _handleNext(); // Call refactored logic
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

@@ -114,7 +114,6 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
             // Continue even if image upload fails
           }
         }
-
         // 6. Save complete data to Firestore (with Firebase Storage URL)
         if (user != null) {
           final scanData = {
@@ -127,7 +126,6 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
           };
           await FirestoreService().addScan(user.uid, scanData);
         }
-
         // 7. Get userName
         String userName = 'Guest';
         if (user != null) {
@@ -137,7 +135,6 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
             userName = userData['name'] ?? 'Guest';
           }
         }
-
         // 8. Convert classification string to CataractType enum
         CataractType cataractType;
         if (classification.toLowerCase().contains('mature') &&
@@ -176,7 +173,6 @@ class _AnalyzingPageState extends State<AnalyzingPage> {
       }
     }
   }
-
   // Helper method to safely convert any numeric type to double
   double? _toDouble(dynamic value) {
     if (value == null) return null;
