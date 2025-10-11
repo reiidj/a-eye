@@ -17,7 +17,19 @@ class ScanModePage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      // This allows the body's background image to extend behind the AppBar.
+      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent, // Makes the AppBar invisible
+        elevation: 0, // Removes the shadow
+        // The 'leading' widget is the conventional place for a back button.
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          // This pops the current page off the navigation stack, taking the user back.
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -36,7 +48,6 @@ class ScanModePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: screenHeight * 0.08),
 
                 Text(
                   "Select image input method:",

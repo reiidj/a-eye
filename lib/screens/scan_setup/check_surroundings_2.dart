@@ -9,7 +9,16 @@ class CheckSurroundings2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: Stack(
         children: [
           // Background image
@@ -24,10 +33,8 @@ class CheckSurroundings2 extends StatelessWidget {
             ),
           ),
 
-          // Bottom button
-          // Bottom button positioned
           Positioned(
-            bottom: 20, // Distance from bottom, adjust as needed
+            bottom: 20, // Distance from bottom
             left: 0,
             right: 0,
             child: SafeArea(
