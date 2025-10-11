@@ -153,7 +153,7 @@ class _ResultCardState extends State<ResultCard> {
     final imageSize = screenWidth * 0.2;
     final labelFontSize = screenWidth * 0.0375;
     final dateFontSize = screenWidth * 0.0375;
-    final titleFontSize = screenWidth * 0.045;
+    final titleFontSize = screenWidth * 0.042;
     final warningFontSize = screenWidth * 0.035;
     final loadingFontSize = screenWidth * 0.035;
 
