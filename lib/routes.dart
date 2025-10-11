@@ -168,7 +168,7 @@ final Map<String, WidgetBuilder> appRoutes = {
     return InvalidImagePage(
       imagePath: args['imagePath'] as String,
       reason: args['reason'] as String,
-      onBack: () => Navigator.of(context).pop(),
+      onBack: () => Navigator.pop(context),
     );
   },
 

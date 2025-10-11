@@ -83,7 +83,11 @@ class InvalidImagePage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: onBack ?? () => Navigator.of(context).pop(),
+                        onPressed: onBack ?? () {
+                          // Since CropImagePage uses pushReplacementNamed,
+                          // we only need one pop to return to CameraPage
+                          Navigator.pop(context);
+                        },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF5244F3), width: 2),
                           padding: EdgeInsets.symmetric(

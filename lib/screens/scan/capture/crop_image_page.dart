@@ -110,6 +110,9 @@ class CropImagePageState extends State<CropImagePage> {
       if (!mounted) return;
 
       if (validationResult['isValid'] == true) {
+        // Reset state before navigating away
+        setState(() => _isCropping = false);
+
         Navigator.pushNamed(
           context,
           '/analyzing',
@@ -119,7 +122,9 @@ class CropImagePageState extends State<CropImagePage> {
           },
         );
       } else {
-        Navigator.pushNamed(
+        setState(() => _isCropping = false);
+
+        Navigator.pushReplacementNamed(
           context,
           '/invalid',
           arguments: {
@@ -129,7 +134,7 @@ class CropImagePageState extends State<CropImagePage> {
         );
       }
     } catch (e) {
-      print(' Crop processing error: $e');
+      print('Crop processing error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error processing image: $e')),
