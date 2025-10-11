@@ -115,11 +115,13 @@ class _UploadCropPageState extends State<UploadCropPage> {
       if (!mounted) return;
 
       if (validationResult['isValid'] == true) {
+        setState(() => _isCropping = false);
         Navigator.pushNamed(context, '/analyzing', arguments: {
           'imageBytes': jpegBytes,
           'imagePath': tempPath,
         });
       } else {
+        setState(() => _isCropping = false);
         Navigator.push(
           context,
           MaterialPageRoute(
