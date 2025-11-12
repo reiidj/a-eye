@@ -110,9 +110,7 @@ class CropImagePageState extends State<CropImagePage> {
       if (!mounted) return;
 
       if (validationResult['isValid'] == true) {
-        // Reset state before navigating away
         setState(() => _isCropping = false);
-
         Navigator.pushNamed(
           context,
           '/analyzing',

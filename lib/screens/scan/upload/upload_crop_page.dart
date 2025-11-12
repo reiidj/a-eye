@@ -61,7 +61,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
         setState(() => _imageReady = true);
       }
     } catch (e) {
-      print('⚠ Image load error: $e');
+      print(' Image load error: $e');
       try {
         final file = File(widget.imagePath);
         _imageData = await file.readAsBytes();
@@ -116,18 +116,26 @@ class _UploadCropPageState extends State<UploadCropPage> {
 
       if (validationResult['isValid'] == true) {
         setState(() => _isCropping = false);
-        Navigator.pushNamed(context, '/analyzing', arguments: {
-          'imageBytes': jpegBytes,
-          'imagePath': tempPath,
-        });
+        Navigator.pushNamed(
+            context,
+            '/analyzing',
+            arguments: {
+              'imageBytes': jpegBytes,
+              'imagePath': tempPath,
+            }
+        );
       } else {
         setState(() => _isCropping = false);
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => UploadInvalidPage(
-              reason: validationResult['reason'] ?? 'Validation failed',
               imagePath: tempPath,
+              reason: validationResult['reason'] ?? 'Validation failed',
+              onBack: () {
+                Navigator.pop(context); // Close invalid page
+                Navigator.pop(context); // Close crop page, return to select page
+              },
             ),
           ),
         );
