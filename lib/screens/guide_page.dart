@@ -1,8 +1,49 @@
+/*
+ * Program Title: guide_page.dart
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module serves as the comprehensive "User Manual" for the application.
+ *   It is accessible via the `CameraPage`, `InvalidImagePage`, and `WelcomeScreen`.
+ *   It provides a step-by-step walkthrough of the entire analysis lifecycle,
+ *   from image acquisition to interpreting results, and includes a troubleshooting
+ *   section for common validation errors.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To educate users on best practices (lighting, positioning, cropping) to
+ *   maximize the accuracy of the AI classification and reduce invalid scans.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * List<String> (tips): Used within the helper widget to render bulleted
+ *       lists of advice dynamically.
+ *
+ *   Algorithms:
+ *     * Modular Widget Composition: Uses a private helper class `_GuideStep`
+ *       to enforce consistent styling across all 8 steps of the tutorial.
+ *
+ *   Control:
+ *     * Scroll View: Uses `ListView` to handle long-form content exceeding
+ *       the screen height.
+ *     * Navigation: Simple `pop` logic to return to the previous context.
+ */
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Class: GuidePage
+/// Purpose: Stateless widget displaying the scrollable "How-to" guide.
 class GuidePage extends StatelessWidget {
-  final VoidCallback onNext;
+  // -- INPUT PARAMETERS --
+  final VoidCallback onNext; // Placeholder for future guided-tour logic
 
   const GuidePage({
     super.key,
@@ -11,11 +52,14 @@ class GuidePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // -- ALGORITHM: RESPONSIVE SIZING --
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
+
+      // -- UI COMPONENT: HEADER --
       appBar: AppBar(
         backgroundColor: const Color(0xFF131A21),
         elevation: 0,
@@ -32,9 +76,12 @@ class GuidePage extends StatelessWidget {
           ),
         ),
       ),
+
+      // -- UI COMPONENT: MAIN SCROLLABLE LIST --
       body: ListView(
         padding: EdgeInsets.all(screenWidth * 0.05),
         children: [
+          // Step 1: Selection
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.photo_library_outlined,
@@ -48,6 +95,7 @@ class GuidePage extends StatelessWidget {
               "The entire eye should fit in the frame with some space around it",
             ],
           ),
+          // Step 2: Lighting
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.wb_sunny_outlined,
@@ -61,6 +109,7 @@ class GuidePage extends StatelessWidget {
               "The eye should be evenly lit with no dark shadows",
             ],
           ),
+          // Step 3: Quality
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.center_focus_strong,
@@ -74,6 +123,7 @@ class GuidePage extends StatelessWidget {
               "Use the back camera for better quality (not selfie mode)",
             ],
           ),
+          // Step 4: Positioning
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.visibility_outlined,
@@ -87,6 +137,7 @@ class GuidePage extends StatelessWidget {
               "The pupil and iris should be clearly visible",
             ],
           ),
+          // Step 5: Cropping
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.crop,
@@ -100,6 +151,7 @@ class GuidePage extends StatelessWidget {
               "Make sure the entire iris is within the crop boundary",
             ],
           ),
+          // Step 6: Analysis
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.analytics_outlined,
@@ -109,6 +161,7 @@ class GuidePage extends StatelessWidget {
                 "takes just a few seconds.",
             tips: [],
           ),
+          // Step 7: Results
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.assessment_outlined,
@@ -122,6 +175,7 @@ class GuidePage extends StatelessWidget {
               "Save your report for reference during doctor visits",
             ],
           ),
+          // Step 8: History
           _GuideStep(
             screenWidth: screenWidth,
             icon: Icons.history_outlined,
@@ -131,6 +185,8 @@ class GuidePage extends StatelessWidget {
             tips: [],
           ),
           SizedBox(height: screenHeight * 0.02),
+
+          // -- UI COMPONENT: TROUBLESHOOTING BOX --
           Container(
             padding: EdgeInsets.all(screenWidth * 0.04),
             decoration: BoxDecoration(
@@ -161,6 +217,7 @@ class GuidePage extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: screenHeight * 0.015),
+                // List specific validation errors handled by the API
                 _buildInvalidReason("Poor lighting or shadows", screenWidth),
                 _buildInvalidReason("Blurry or out-of-focus image", screenWidth),
                 _buildInvalidReason("Eye not fully visible or partially closed", screenWidth),
@@ -176,6 +233,10 @@ class GuidePage extends StatelessWidget {
     );
   }
 
+  /*
+   * Function: _buildInvalidReason
+   * Purpose: Helper to render a single line item for the troubleshooting box.
+   */
   Widget _buildInvalidReason(String text, double screenWidth) {
     return Padding(
       padding: EdgeInsets.only(bottom: screenWidth * 0.02),
@@ -205,6 +266,9 @@ class GuidePage extends StatelessWidget {
   }
 }
 
+/// Class: _GuideStep
+/// Purpose: Private helper widget to render a standardized instruction block.
+/// Features an icon, title, description, and optional bullet points.
 class _GuideStep extends StatelessWidget {
   final double screenWidth;
   final IconData icon;
@@ -227,12 +291,14 @@ class _GuideStep extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Step Icon
           Icon(
             icon,
             color: const Color(0xFF5244F3),
             size: screenWidth * 0.08,
           ),
           SizedBox(width: screenWidth * 0.04),
+          // Step Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,6 +320,7 @@ class _GuideStep extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
+                // Control: Conditionally render tips if list is not empty
                 if (tips.isNotEmpty) ...[
                   SizedBox(height: screenWidth * 0.02),
                   ...tips.map((tip) => Padding(

@@ -1,3 +1,47 @@
+/*
+ * Program Title: A-Eye: Cataract Maturity Classification Tool
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module is located in `lib/screens/scan/capture/` and is a critical
+ *   component of the "Analysis Flow". It interfaces directly with the device
+ *   hardware to capture high-resolution images of the user's eye. It handles
+ *   raw byte stream management, real-time preview rendering, and initial
+ *   image pre-processing (compression and mirroring) before passing the file
+ *   to the cropping stage.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To provide a custom camera interface with specific UI guides (crosshairs)
+ *   to assist users in capturing centered, focused images of their eyes,
+ *   while managing hardware resources and storage optimization.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * CameraController: Managing connection to the device's camera sensor.
+ *     * List<CameraDescription>: Storing available lens configurations (front/back).
+ *     * XFile/File: Handling temporary storage of captured image data.
+ *
+ *   Algorithms:
+ *     * Image Compression: Uses `FlutterImageCompress` to reduce file size
+ *       (quality 85) to optimize upload speed to the API.
+ *     * Matrix Transformation: Applies `img.flipHorizontal` if the front
+ *       camera is used, ensuring the image matches the user's mirror view.
+ *
+ *   Control:
+ *     * Lifecycle Management: Strictly initializes and disposes the camera
+ *       controller to prevent memory leaks or hardware locks.
+ *     * Asynchronous Execution: Uses `Future/await` for all hardware I/O
+ *       and file system operations.
+ */
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -5,6 +49,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
 
+/// Class: CameraPage
+/// Purpose: Stateful widget that renders the camera viewfinder and controls.
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
 
@@ -13,14 +59,15 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage> {
-  String _selectedEye = 'Left';
-  CameraController? _controller;
+  // -- LOCAL STATE --
+  String _selectedEye = 'Left'; // Tracks metadata for the analysis report
+  CameraController? _controller; // Hardware interface
   Future<void>? _initializeControllerFuture;
   bool _cameraInitialized = false;
   String? _errorMessage;
-  int _selectedCameraIndex = 0;
+  int _selectedCameraIndex = 0; // Toggles between front (1) and back (0)
   List<CameraDescription> _availableCameras = [];
-  bool _isProcessing = false;
+  bool _isProcessing = false; // Semaphore to prevent double-clicks during capture
 
   @override
   void initState() {
@@ -28,18 +75,26 @@ class _CameraPageState extends State<CameraPage> {
     _setupCamera();
   }
 
+  /*
+   * Function: _setupCamera
+   * Purpose: Asynchronously fetches available cameras and initializes the first one.
+   */
   Future<void> _setupCamera() async {
     try {
+      // -- ALGORITHM: HARDWARE DETECTION --
       _availableCameras = await availableCameras();
       if (_availableCameras.isEmpty) {
         if (mounted) setState(() => _errorMessage = 'No cameras available');
         return;
       }
+      // Initialize controller with specific resolution preset
       _controller = CameraController(
         _availableCameras[_selectedCameraIndex],
         ResolutionPreset.medium,
-        enableAudio: false,
+        enableAudio: false, // Audio permission not required for static images
       );
+
+      // Control: Wait for hardware initialization before updating UI
       _initializeControllerFuture = _controller!.initialize().then((_) {
         if (mounted) setState(() => _cameraInitialized = true);
       }).catchError((e) {
@@ -51,20 +106,30 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
+  // -- CONTROL: RESOURCE MANAGEMENT --
   @override
   void dispose() {
+    // Critical: Release camera hardware when leaving the screen
     _controller?.dispose();
     super.dispose();
   }
 
+  /*
+   * Function: _takePicture
+   * Purpose: Captures frame, processes it (compress/flip), and navigates.
+   */
   Future<void> _takePicture() async {
+    // Validation: Ensure camera is ready and not currently saving another image
     if (_controller == null || !_controller!.value.isInitialized || _isProcessing) return;
     setState(() => _isProcessing = true);
 
     try {
+      // Capture raw image from sensor
       final XFile image = await _controller!.takePicture();
       final file = File(image.path);
 
+      // -- ALGORITHM: IMAGE COMPRESSION --
+      // optimization: Reduce resolution/quality to prevent payload issues with API
       final compressed = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
         "${file.parent.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg",
@@ -73,6 +138,9 @@ class _CameraPageState extends State<CameraPage> {
         minHeight: 1024,
       );
 
+      // -- ALGORITHM: MIRRORING --
+      // Check if front camera was used. If so, flip the image horizontally
+      // so the "Left Eye" in the photo matches the "Left Eye" selected in UI.
       if (_availableCameras[_selectedCameraIndex].lensDirection == CameraLensDirection.front) {
         final bytes = await File(compressed!.path).readAsBytes();
         final decoded = img.decodeImage(bytes);
@@ -80,6 +148,8 @@ class _CameraPageState extends State<CameraPage> {
           final flipped = img.flipHorizontal(decoded);
           final flippedPath = "${file.parent.path}/flipped_${DateTime.now().millisecondsSinceEpoch}.jpg";
           await File(flippedPath).writeAsBytes(img.encodeJpg(flipped, quality: 85));
+
+          // Navigation: Pass processed path to crop screen
           Navigator.pushNamed(
             context,
             '/crop',
@@ -92,6 +162,7 @@ class _CameraPageState extends State<CameraPage> {
         }
       }
 
+      // Navigation: Pass standard path if back camera
       Navigator.pushNamed(
         context,
         '/crop',
@@ -105,6 +176,7 @@ class _CameraPageState extends State<CameraPage> {
       print(st);
       if (mounted) setState(() => _errorMessage = 'Capture failed: $e');
     } finally {
+      // Reset processing flag
       if (mounted) setState(() => _isProcessing = false);
     }
   }
@@ -112,11 +184,12 @@ class _CameraPageState extends State<CameraPage> {
   Future<void> _flipCamera() async {
     if (_availableCameras.length < 2) return;
     setState(() {
+      // Algorithm: Cycle through camera list index
       _selectedCameraIndex = (_selectedCameraIndex + 1) % _availableCameras.length;
       _cameraInitialized = false;
     });
-    await _controller?.dispose();
-    await _setupCamera();
+    await _controller?.dispose(); // Dispose old controller
+    await _setupCamera(); // Re-initialize with new index
   }
 
   @override
@@ -130,6 +203,7 @@ class _CameraPageState extends State<CameraPage> {
         children: [
           Column(
             children: [
+              // -- UI COMPONENT: VIEWFINDER --
               SizedBox(
                 height: screenHeight * 0.6,
                 width: double.infinity,
@@ -138,6 +212,7 @@ class _CameraPageState extends State<CameraPage> {
                     Positioned.fill(
                       child: _buildCameraPreview(),
                     ),
+                    // Overlay Guide (Crosshair + Text)
                     Positioned.fill(
                       child: IgnorePointer(
                         child: Center(
@@ -165,6 +240,8 @@ class _CameraPageState extends State<CameraPage> {
                   ],
                 ),
               ),
+
+              // -- UI COMPONENT: CONTROLS AREA --
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -180,6 +257,7 @@ class _CameraPageState extends State<CameraPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Flip Camera Button
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -203,6 +281,8 @@ class _CameraPageState extends State<CameraPage> {
                           ),
                         ],
                       ),
+
+                      // Shutter Button (Visual Design)
                       GestureDetector(
                         onTap: _takePicture,
                         child: Container(
@@ -231,6 +311,8 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.02),
+
+                      // Guide Button
                       OutlinedButton(
                         onPressed: () {
                           Navigator.pushNamed(context, '/guide');
@@ -261,6 +343,7 @@ class _CameraPageState extends State<CameraPage> {
               ),
             ],
           ),
+          // Loading Overlay
           if (_isProcessing)
             Container(
               color: Colors.black.withOpacity(0.6),
@@ -278,6 +361,7 @@ class _CameraPageState extends State<CameraPage> {
     if (!_cameraInitialized || _controller == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    // Fix: Ensure Aspect Ratio is preserved to prevent stretching
     return ClipRect(
       child: OverflowBox(
         alignment: Alignment.center,
@@ -323,6 +407,8 @@ class _CameraPageState extends State<CameraPage> {
   }
 }
 
+/// Class: CrosshairPainter
+/// Purpose: Custom Painter to draw the guidance overlay (dashed lines) on the camera.
 class CrosshairPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -332,6 +418,8 @@ class CrosshairPainter extends CustomPainter {
     final Paint dashedPaint = Paint()
       ..color = Colors.white.withOpacity(0.6)
       ..strokeWidth = 6;
+
+    // Calculations for centering the crosshair
     const double gapBeforeDashed = 15;
     final double centerX = size.width / 2;
     final double centerY = size.height / 2;
@@ -339,6 +427,8 @@ class CrosshairPainter extends CustomPainter {
     final double start = armLength + gapBeforeDashed;
     const double dashWidth = 25;
     const double dashSpace = 15;
+
+    // Draw Dashed Lines (Algorithm: Iterative line drawing)
     for (double i = start; i < size.width / 2; i += dashWidth + dashSpace) {
       canvas.drawLine(
         Offset(centerX + i, centerY),
@@ -367,6 +457,7 @@ class CrosshairPainter extends CustomPainter {
         dashedPaint,
       );
     }
+    // Draw Center Solid Cross
     canvas.drawLine(
       Offset(centerX - armLength, centerY),
       Offset(centerX + armLength, centerY),

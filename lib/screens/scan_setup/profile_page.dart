@@ -1,9 +1,56 @@
+/*
+ * Program Title: profile_page.dart
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module is part of the User Management subsystem. It provides a
+ *   CRUD (Create/Read/Update) interface for the user's profile data stored
+ *   in Cloud Firestore. It allows users to review and modify their personal
+ *   details (Name, Gender, Age, Email) ensuring the metadata attached to
+ *   future scans remains accurate. It interacts directly with the
+ *   `FirestoreService` and `FirebaseAuth` for identity verification.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To allow users to view their current registered information and update
+ *   missing or incorrect fields, specifically capturing an email address
+ *   for report delivery.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * TextEditingController: Manages mutable state for text input fields.
+ *     * Map<String, dynamic>: Structures data for Firestore document transmission.
+ *
+ *   Algorithms:
+ *     * Asynchronous Data Fetching: Retrieves user documents on initialization
+ *       to pre-fill the form.
+ *     * Input Validation: Checks for empty strings and null dropdowns before
+ *       permitting a database write operation.
+ *
+ *   Control:
+ *     * State Management: Uses `isLoading` and `isSaving` booleans to toggle
+ *       between form UI and progress indicators.
+ *     * Exception Handling: Catches Firebase errors during read/write operations
+ *       and displays feedback via SnackBars.
+ */
+
+
 import 'package:a_eye/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Class: ProfilePage
+/// Purpose: Stateful widget for viewing and editing user profile details.
 class ProfilePage extends StatefulWidget {
+  // -- INPUT PARAMETERS --
   final VoidCallback onNext;
 
   const ProfilePage({super.key, required this.onNext});
@@ -13,18 +60,22 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  // -- LOCAL STATE --
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
 
   String? _selectedGender;
   String? _selectedAgeGroup;
 
-  bool isLoading = true;
-  bool isSaving = false;
+  // State flags for UI feedback
+  bool isLoading = true; // Toggles initial data fetch spinner
+  bool isSaving = false; // Toggles save button spinner
 
+  // -- SERVICES --
   final User? currentUser = FirebaseAuth.instance.currentUser;
   final FirestoreService _firestoreService = FirestoreService();
 
+  // Dropdown Data Sources
   final List<String> genderOptions = ["Male", "Female", "Other"];
   final List<String> ageGroupOptions = [
     "Under 20",
@@ -39,7 +90,12 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserData();
   }
 
+  /*
+   * Function: _loadUserData
+   * Purpose: Fetches existing profile data from Firestore to populate fields.
+   */
   Future<void> _loadUserData() async {
+    // Validation: Ensure auth state is valid
     if (currentUser == null) {
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,14 +105,17 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     try {
+      // -- ALGORITHM: READ OPERATION --
       final userDoc = await _firestoreService.getUser(currentUser!.uid);
 
       if (userDoc.exists) {
         final userData = userDoc.data() as Map<String, dynamic>;
+        // Update UI state with fetched data
         setState(() {
           nameController.text = userData['name'] ?? '';
           _selectedGender = userData['gender'];
           _selectedAgeGroup = userData['ageGroup'];
+          // Fallback to Auth email if Firestore email is missing
           emailController.text = userData['email'] ?? currentUser!.email ?? '';
           isLoading = false;
         });
@@ -64,6 +123,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() => isLoading = false);
       }
     } catch (e) {
+      // Error Handling: Network or Permission errors
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading profile data: $e')),
@@ -71,6 +131,10 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  /*
+   * Function: _saveUserData
+   * Purpose: Validates inputs and commits changes to Firestore.
+   */
   Future<void> _saveUserData() async {
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,6 +143,8 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
+    // -- CONTROL: INPUT VALIDATION --
+    // Ensure no required fields are left empty
     if (nameController.text.trim().isEmpty ||
         _selectedGender == null ||
         _selectedAgeGroup == null ||
@@ -89,9 +155,11 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
+    // Lock UI
     setState(() => isSaving = true);
 
     try {
+      // Prepare payload
       final updatedData = {
         'name': nameController.text.trim(),
         'gender': _selectedGender,
@@ -99,15 +167,18 @@ class _ProfilePageState extends State<ProfilePage> {
         'email': emailController.text.trim(),
       };
 
+      // -- ALGORITHM: WRITE OPERATION --
+      // Update or Create the document for the current UID
       await _firestoreService.addUser(currentUser!.uid, updatedData);
 
       setState(() => isSaving = false);
 
+      // Success Feedback
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile saved successfully!'), backgroundColor: Colors.green),
       );
 
-      // Reload the data to reflect the changes on the page
+      // Logic: Refresh data and navigate back to Welcome screen
       await _loadUserData();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/welcome');
@@ -121,6 +192,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // -- CONTROL: MEMORY MANAGEMENT --
   @override
   void dispose() {
     nameController.dispose();
@@ -134,10 +206,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      // Allow keyboard overlay
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
+          // -- UI COMPONENT: BACKGROUND --
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -148,6 +222,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
           ),
+          // -- UI COMPONENT: MAIN FORM --
           if (!isLoading)
             SafeArea(
               child: SingleChildScrollView(
@@ -158,6 +233,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     SizedBox(height: screenHeight * 0.02),
+                    // Logo
                     SizedBox(
                       height: screenWidth * 0.525,
                       width: screenWidth * 0.525,
@@ -167,6 +243,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     SizedBox(height: screenHeight * 0.02),
+
+                    // Form Container
                     Container(
                       padding: EdgeInsets.fromLTRB(
                         screenWidth * 0.04,
@@ -194,21 +272,29 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           SizedBox(height: screenHeight * 0.02),
                           const Divider(color: Colors.white30, thickness: 1),
+
+                          // -- UI COMPONENTS: INPUT ROWS --
                           _buildInputRow("Name", nameController, screenWidth,
                               isRequired: true, maxLength: 15),
                           const Divider(color: Colors.white30, thickness: 1),
+
                           _buildDropdownRow("Gender", _selectedGender, genderOptions,
                                   (val) => setState(() => _selectedGender = val), screenWidth,
                               isRequired: true),
                           const Divider(color: Colors.white30, thickness: 1),
+
                           _buildDropdownRow("Age", _selectedAgeGroup, ageGroupOptions,
                                   (val) => setState(() => _selectedAgeGroup = val), screenWidth,
                               isRequired: true),
                           const Divider(color: Colors.white30, thickness: 1),
+
                           _buildInputRow("Email", emailController, screenWidth,
                               inputType: TextInputType.emailAddress, isRequired: true),
                           const Divider(color: Colors.white30, thickness: 1),
+
                           SizedBox(height: screenHeight * 0.04),
+
+                          // -- UI COMPONENT: SUBMIT BUTTON --
                           Center(
                             child: SizedBox(
                               width: double.infinity,
@@ -256,6 +342,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
+
+          // Loading Overlay
           if (isLoading)
             Container(
               color: Colors.black54,
@@ -270,6 +358,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  /*
+   * Function: _buildDropdownRow
+   * Purpose: Helper widget to construct standardized dropdown fields.
+   */
   Widget _buildDropdownRow(
       String label,
       String? selectedValue,
@@ -346,6 +438,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  /*
+   * Function: _buildInputRow
+   * Purpose: Helper widget to construct standardized text input fields with optional info icon.
+   */
   Widget _buildInputRow(
       String label,
       TextEditingController controller,
@@ -381,6 +477,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ' *',
                     style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.03),
                   ),
+                // Info Icon logic for Email field explanation
                 if (label.toLowerCase() == 'email')
                   IconButton(
                     icon: Icon(

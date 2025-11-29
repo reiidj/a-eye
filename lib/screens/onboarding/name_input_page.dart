@@ -1,8 +1,51 @@
+/*
+ * Program Title: A-Eye: Cataract Maturity Classification Tool
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module is located in `lib/screens/onboarding/` and represents the
+ *   first data collection step in the Onboarding Flow. Following the
+ *   Landing Page, it captures the user's display name. It serves as the
+ *   initial state of the user profile creation process, passing the
+ *   validated text input to the subsequent `GenderSelectPage` via callbacks.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To provide a simple, responsive interface for users to input their name,
+ *   featuring real-time input management and validation to prevent empty
+ *   submissions.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * TextEditingController (_nameController): A Flutter controller used to
+ *       read and manipulate the text within the input field.
+ *
+ *   Algorithms:
+ *     * String Manipulation: Uses `.trim()` to remove accidental leading/trailing
+ *       whitespace before storage.
+ *
+ *   Control:
+ *     * Resource Management: Overrides `dispose()` to free controller memory.
+ *     * Input Validation: Checks if the trimmed string is empty before allowing
+ *       navigation to the next screen.
+ */
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+/// Class: NameInputPage
+/// Purpose: Stateful widget for the first step of user registration.
 class NameInputPage extends StatefulWidget {
+  // -- INPUT PARAMETERS --
+  // Callbacks to delegate navigation logic to the parent/router
   final void Function(String name) onNext;
   final void Function() onBack;
 
@@ -17,16 +60,22 @@ class NameInputPage extends StatefulWidget {
 }
 
 class _NameInputPageState extends State<NameInputPage> {
+  // -- LOCAL STATE --
+  // Controller to maintain the text input state
   final TextEditingController _nameController = TextEditingController();
 
+  // -- CONTROL: MEMORY MANAGEMENT --
   @override
   void dispose() {
+    // Clean up the controller when the widget is removed from the widget tree
     _nameController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // -- ALGORITHM: RESPONSIVE SIZING --
+    // Calculate dimensions based on current device screen size
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -34,7 +83,8 @@ class _NameInputPageState extends State<NameInputPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // UI Elements (Glowing circles, etc.)...
+          // -- UI COMPONENT: BACKGROUND --
+          // Layer 1: Decorative glowing circles
           Positioned(
             top: -500,
             right: -500,
@@ -72,16 +122,18 @@ class _NameInputPageState extends State<NameInputPage> {
             ),
           ),
 
-          // Main scrollable content
+          // -- MAIN CONTENT --
           SafeArea(
             child: Column(
               children: [
-                // Step indicator...
+                // -- UI COMPONENT: PROGRESS INDICATOR --
+                // Visualizing Step 1 of 3 (Active, Inactive, Inactive)
                 Padding(
                   padding: EdgeInsets.only(top: screenHeight * 0.02),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Active Step (Colored)
                       Container(
                         width: screenWidth * 0.28,
                         height: 6,
@@ -91,6 +143,7 @@ class _NameInputPageState extends State<NameInputPage> {
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
+                      // Inactive Step (Gray)
                       Container(
                         width: screenWidth * 0.28,
                         height: 6,
@@ -100,6 +153,7 @@ class _NameInputPageState extends State<NameInputPage> {
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
+                      // Inactive Step (Gray)
                       Container(
                         width: screenWidth * 0.28,
                         height: 6,
@@ -113,17 +167,18 @@ class _NameInputPageState extends State<NameInputPage> {
                   ),
                 ),
 
-                // Scrollable content area
+                // -- SCROLLABLE FORM AREA --
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
+                        // Ensure minimum height allows for scrolling on small screens
                         minHeight: screenHeight -
                             MediaQuery.of(context).padding.top -
                             MediaQuery.of(context).padding.bottom -
                             screenHeight * 0.02 -
-                            120, // Approximate space for indicator and buttons
+                            120,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 30.0),
@@ -140,17 +195,19 @@ class _NameInputPageState extends State<NameInputPage> {
                               textAlign: TextAlign.center,
                             ),
                             SizedBox(height: screenHeight * 0.025),
+
+                            // -- UI COMPONENT: INPUT FIELD --
                             TextField(
                               controller: _nameController,
-                              autofocus: true,
-                              maxLength: 13,
+                              autofocus: true, // Automatically open keyboard
+                              maxLength: 13, // Limit input length
                               style: const TextStyle(color: Colors.white),
                               decoration: InputDecoration(
                                 hintText: 'Enter your name',
                                 hintStyle: TextStyle(color: Colors.grey.shade400),
                                 filled: true,
                                 fillColor: Colors.white.withOpacity(0.05),
-                                counterText: '',
+                                counterText: '', // Hide character counter
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
@@ -169,7 +226,7 @@ class _NameInputPageState extends State<NameInputPage> {
                   ),
                 ),
 
-                // Navigation buttons...
+                // -- NAVIGATION CONTROLS --
                 Padding(
                   padding: EdgeInsets.only(
                     left: 30,
@@ -179,6 +236,7 @@ class _NameInputPageState extends State<NameInputPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Previous Button: Returns to Landing Page
                       Flexible(
                         child: OutlinedButton(
                           onPressed: widget.onBack,
@@ -202,12 +260,17 @@ class _NameInputPageState extends State<NameInputPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
+
+                      // Next Button: Validates and Proceed
                       Flexible(
                         child: ElevatedButton(
                           onPressed: () {
+                            // -- CONTROL: INPUT VALIDATION --
+                            // Algorithm: Check if string is not empty after trimming spaces
                             if (_nameController.text.trim().isNotEmpty) {
                               widget.onNext(_nameController.text.trim());
                             } else {
+                              // Error Handling: Show feedback via SnackBar
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("Please enter your name"),

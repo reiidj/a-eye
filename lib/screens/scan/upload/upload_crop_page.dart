@@ -1,3 +1,47 @@
+/*
+ * Program Title: A-Eye: Cataract Maturity Classification Tool
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module is located in `lib/screens/scan/upload/` and handles the
+ *   cropping stage specifically for the "Upload Flow" (Gallery selection).
+ *   Similar to the camera crop screen, it normalizes the image resolution,
+ *   provides a manual crop interface, and performs API validation.
+ *   Uniquely, upon validation failure, it routes to `UploadInvalidPage`,
+ *   ensuring the user returns to the gallery selection context rather than
+ *   the camera viewfinder.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To allow users to refine images selected from their device storage,
+ *   ensuring the pupil is centered and the image quality meets the API
+ *   requirements before proceeding to analysis.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * Uint8List (_imageData): Stores the binary image data for the cropper.
+ *     * CropController: Manages crop area coordinates and actions.
+ *
+ *   Algorithms:
+ *     * Image Resizing: Downscales high-resolution gallery images to a max
+ *       of 2048px to prevent memory crashes on the texture rendering engine.
+ *     * API Validation: Sends the cropped segment to the backend to check
+ *       for blur, brightness, and eye detection.
+ *
+ *   Control:
+ *     * Conditional Navigation: Routes to `/analyzing` if valid, or pushes
+ *       `UploadInvalidPage` onto the stack if invalid.
+ *     * Asynchronous Loading: Handles file I/O and decoding off the UI thread.
+ */
+
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
@@ -7,7 +51,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image/image.dart' as img;
 
+/// Class: UploadCropPage
+/// Purpose: Stateful widget for cropping images sourced from device storage.
 class UploadCropPage extends StatefulWidget {
+  // -- INPUT PARAMETERS --
   final String imagePath;
   final VoidCallback? onNext;
   final VoidCallback? onBack;
@@ -24,10 +71,11 @@ class UploadCropPage extends StatefulWidget {
 }
 
 class _UploadCropPageState extends State<UploadCropPage> {
+  // -- LOCAL STATE --
   final CropController _cropController = CropController();
   late Uint8List _imageData;
-  bool _isCropping = false;
-  bool _imageReady = false;
+  bool _isCropping = false; // UI Lock
+  bool _imageReady = false; // Loading Indicator State
 
   @override
   void initState() {
@@ -35,11 +83,17 @@ class _UploadCropPageState extends State<UploadCropPage> {
     _loadImage();
   }
 
+  /*
+   * Function: _loadImage
+   * Purpose: Reads the file, normalizes resolution for performance, and updates state.
+   */
   Future<void> _loadImage() async {
     try {
       final file = File(widget.imagePath);
       final bytes = await file.readAsBytes();
 
+      // -- ALGORITHM: NORMALIZATION --
+      // Gallery images can be huge (12MP+). We decode and resize to max 2048px.
       final decoded = img.decodeImage(bytes);
       if (decoded != null) {
         img.Image normalized = decoded;
@@ -52,9 +106,10 @@ class _UploadCropPageState extends State<UploadCropPage> {
           );
         }
 
+        // Re-encode to JPEG for the widget display
         _imageData = Uint8List.fromList(img.encodeJpg(normalized, quality: 92));
       } else {
-        _imageData = bytes;
+        _imageData = bytes; // Fallback
       }
 
       if (mounted) {
@@ -62,6 +117,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
       }
     } catch (e) {
       print(' Image load error: $e');
+      // Fallback: Try reading raw bytes if processing fails
       try {
         final file = File(widget.imagePath);
         _imageData = await file.readAsBytes();
@@ -80,6 +136,10 @@ class _UploadCropPageState extends State<UploadCropPage> {
     }
   }
 
+  /*
+   * Function: _onCropped
+   * Purpose: Handles crop completion, temp saving, API validation, and routing.
+   */
   void _onCropped(Uint8List croppedData) async {
     try {
       if (croppedData.isEmpty) {
@@ -91,6 +151,8 @@ class _UploadCropPageState extends State<UploadCropPage> {
         throw Exception('Failed to decode cropped image');
       }
 
+      // -- CONTROL: SIZE CHECK --
+      // Prevent analysis of thumbnails or accidental tiny crops
       if (decoded.width < 50 || decoded.height < 50) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -102,19 +164,24 @@ class _UploadCropPageState extends State<UploadCropPage> {
         return;
       }
 
+      // Encode final crop
       final jpegBytes =
       Uint8List.fromList(img.encodeJpg(decoded, quality: 92));
 
+      // Save to temporary cache for API upload
       final tempPath =
           '${Directory.systemTemp.path}/cropped_eye_${DateTime.now().millisecondsSinceEpoch}.jpg';
       await File(tempPath).writeAsBytes(jpegBytes);
 
+      // -- ALGORITHM: API VALIDATION --
       final ApiService apiService = ApiService();
       final validationResult = await apiService.validateImage(tempPath);
 
       if (!mounted) return;
 
+      // -- CONTROL: BRANCHING LOGIC --
       if (validationResult['isValid'] == true) {
+        // Success: Navigate to Analyzing Page
         setState(() => _isCropping = false);
         Navigator.pushNamed(
             context,
@@ -125,6 +192,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
             }
         );
       } else {
+        // Failure: Navigate to specific Upload Invalid Page
         setState(() => _isCropping = false);
         Navigator.push(
           context,
@@ -164,7 +232,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
           child: Column(
             children: [
               SizedBox(height: screenHeight * 0.02),
-              // Header
+              // -- UI COMPONENT: HEADER --
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -177,6 +245,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.02),
+                  // Instruction Bubble
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
@@ -204,7 +273,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
               ),
               SizedBox(height: screenHeight * 0.03),
 
-              // Cropper
+              // -- UI COMPONENT: CROPPER WIDGET --
               if (_imageReady)
                 SizedBox(
                   height: screenHeight * 0.45,
@@ -217,7 +286,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
                         onCropped: _onCropped,
                         interactive: true,
                         fixArea: true,
-                        aspectRatio: 1,
+                        aspectRatio: 1, // Force Square Crop
                         withCircleUi: false,
                         baseColor: Colors.black,
                         maskColor: Colors.black.withOpacity(0.6),
@@ -227,6 +296,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
                         cornerDotBuilder: (size, edgeAlignment) =>
                         const SizedBox.shrink(),
                       ),
+                      // Overlay: Crosshair Painter
                       Positioned.fill(
                         child: IgnorePointer(
                           child: CustomPaint(
@@ -238,6 +308,7 @@ class _UploadCropPageState extends State<UploadCropPage> {
                   ),
                 )
               else
+              // Loading State
                 SizedBox(
                   height: screenHeight * 0.45,
                   child: const Center(
@@ -259,11 +330,12 @@ class _UploadCropPageState extends State<UploadCropPage> {
 
               const Spacer(),
 
+              // -- UI COMPONENT: RE-UPLOAD BUTTON --
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(); // Return to gallery selection
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
@@ -282,10 +354,13 @@ class _UploadCropPageState extends State<UploadCropPage> {
                 ),
               ),
               SizedBox(height: screenHeight * 0.02),
+
+              // -- UI COMPONENT: ANALYZE BUTTON --
               // Wrapped button in SizedBox to enforce full width
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
+                  // Control: Disable button while processing crop/validation
                   onPressed: _imageReady && !_isCropping
                       ? () {
                     setState(() => _isCropping = true);
@@ -337,6 +412,8 @@ class _UploadCropPageState extends State<UploadCropPage> {
                 ),
               ),
               SizedBox(height: screenHeight * 0.01),
+
+              // Help Link
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/cropGuide');
@@ -361,6 +438,8 @@ class _UploadCropPageState extends State<UploadCropPage> {
   }
 }
 
+/// Class: CrosshairPainter
+/// Purpose: Custom painter for the visual guide overlay (grid lines + center dot).
 class CrosshairPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -372,6 +451,7 @@ class CrosshairPainter extends CustomPainter {
       ..color = Colors.white.withOpacity(0.6)
       ..strokeWidth = 2;
 
+    // Grid Calculations
     const double gap = 15;
     const double armLength = 20;
     final double centerX = size.width / 2;
@@ -380,6 +460,7 @@ class CrosshairPainter extends CustomPainter {
     const double dashWidth = 15;
     const double dashSpace = 10;
 
+    // Draw Vertical Dashed Lines
     for (double i = start;
     i < size.width / 2 - 20;
     i += dashWidth + dashSpace) {
@@ -395,6 +476,7 @@ class CrosshairPainter extends CustomPainter {
       );
     }
 
+    // Draw Horizontal Dashed Lines
     for (double i = start;
     i < size.height / 2 - 20;
     i += dashWidth + dashSpace) {
@@ -410,6 +492,7 @@ class CrosshairPainter extends CustomPainter {
       );
     }
 
+    // Draw Center Cross
     canvas.drawLine(
       Offset(centerX - armLength, centerY),
       Offset(centerX + armLength, centerY),
@@ -421,6 +504,7 @@ class CrosshairPainter extends CustomPainter {
       solidPaint,
     );
 
+    // Draw Center Dot (Blue fill, White stroke)
     canvas.drawCircle(
       Offset(centerX, centerY),
       6,

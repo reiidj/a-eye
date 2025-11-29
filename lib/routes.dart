@@ -1,3 +1,47 @@
+/*
+ * Program Title: routes.dart
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module serves as the central nervous system for application navigation.
+ *   It defines the static routing table (`appRoutes`) that maps string
+ *   identifiers (e.g., '/welcome') to specific Widget constructors. It also
+ *   handles the extraction and type-casting of arguments passed between screens,
+ *   particularly converting raw JSON data from the `AnalyzingPage` into
+ *   strongly-typed parameters for the `ResultsPage`.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To decouple navigation logic from individual screens, providing a single
+ *   source of truth for the app's structure and ensuring type safety when
+ *   passing complex data objects between route boundaries.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * Map<String, WidgetBuilder>: The core lookup table for named routes.
+ *     * Enum (CataractType): Used to normalize string classifications.
+ *
+ *   Algorithms:
+ *     * String Normalization: `_determineCataractType` cleans and parses raw
+ *       API strings to determine the correct medical classification enum.
+ *     * Safe Casting: Converts dynamic numeric types (int/double) from JSON
+ *       maps into Dart doubles to prevent runtime type errors.
+ *
+ *   Control:
+ *     * ModalRoute Extraction: Retrieves arguments passed via
+ *       `Navigator.pushNamed`.
+ *     * Conditional Fallback: Provides default values ('Guest', 'Immature') if
+ *       expected arguments are missing or malformed.
+ */
+
+
 import 'package:flutter/material.dart';
 import 'package:a_eye/screens/onboarding/landing_page.dart';
 import 'package:a_eye/screens/onboarding/name_input_page.dart';
@@ -32,6 +76,11 @@ import 'package:a_eye/screens/scan/upload/upload_invalid_page.dart';
 import 'package:a_eye/screens/crop_guide_page.dart';
 import 'package:a_eye/auth_check_screen.dart';
 
+/*
+ * Function: _determineCataractType
+ * Purpose: Helper algorithm to map API string results to internal Enums.
+ * Logic: Case-insensitive substring matching.
+ */
 CataractType _determineCataractType(String classification) {
   final lowerClassification = classification.toLowerCase().trim();
 
@@ -45,30 +94,32 @@ CataractType _determineCataractType(String classification) {
     return CataractType.immature;
   }
 
-  // Default to immature if unclear
+  // Default to immature if unclear to avoid crashing
   print("WARNING: Unknown classification '$classification', defaulting to immature");
   return CataractType.immature;
 }
 
+/// Data Structure: appRoutes
+/// Purpose: A map linking route names (Strings) to Widget Builders.
 final Map<String, WidgetBuilder> appRoutes = {
 
-  // Auth page
+  // -- SECTION: AUTHENTICATION & ENTRY --
   '/': (context) => const AuthCheckScreen(),
 
-  // Landing Page
+  // -- SECTION: ONBOARDING FLOW --
   '/landing': (context) => LandingPage(
     onNext: () {
+      // Control: Replace stack to prevent going back to splash
       Navigator.pushReplacementNamed(context, '/name');
     },
   ),
 
-  // Name Input Page
   '/name': (context) => NameInputPage(
     onNext: (name) {
       Navigator.pushNamed(
         context,
         '/gender',
-        arguments: name,
+        arguments: name, // Passing data to next route
       );
     },
     onBack: () {
@@ -76,30 +127,28 @@ final Map<String, WidgetBuilder> appRoutes = {
     },
   ),
 
-  // Gender Select Page
   '/gender': (context) {
+    // Algorithm: Extract argument passed from previous screen
     final userName = ModalRoute.of(context)!.settings.arguments as String;
     return GenderSelectPage(
       onNext: (gender) {
         Navigator.pushNamed(
           context,
           '/age',
-          arguments: {'name': userName, 'gender': gender},
+          arguments: {'name': userName, 'gender': gender}, // Aggregate data
         );
       },
       onBack: (gender) => Navigator.pop(context),
     );
   },
 
-  // Age Select Page
   '/age': (context) {
-    // Get the arguments from the previous page
+    // Get the arguments map from the previous page
     final args = ModalRoute.of(context)!.settings.arguments as Map;
     final userName = args['name'];
     final gender = args['gender'];
 
-    // Pass only the required data and the onBack callback.
-    // The onNext logic is now handled inside the AgeSelectPage itself.
+    // Pass data to page; onNext logic is handled internally by AgeSelectPage
     return AgeSelectPage(
       userName: userName,
       gender: gender,
@@ -107,13 +156,13 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
 
-  // Welcome Page
+  // -- SECTION: DASHBOARD --
   '/welcome': (context) {
-    // Extract the arguments sent from the result page
+    // Extract arguments sent from Auth or Results page
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final userName = args?['userName'] as String? ?? 'Guest';
 
-    // Return the WelcomeScreen with its required callbacks
+    // Return the WelcomeScreen with required callbacks for navigation
     return WelcomeScreen(
       userName: userName,
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
@@ -128,14 +177,13 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
 
-  //Profile page
   '/ProfilePage': (context) {
     return ProfilePage(
       onNext: () => Navigator.pushNamed(context, '/scanMode'),
     );
   },
 
-  // Scan Setup Flow
+  // -- SECTION: SCAN SETUP FLOW --
   '/scanMode': (context) => ScanModePage(
     onUpload: () => Navigator.pushNamed(context, '/uploadSelect'),
     onCapture: () => Navigator.pushNamed(context, '/check1'),
@@ -153,7 +201,7 @@ final Map<String, WidgetBuilder> appRoutes = {
     onNext: () => Navigator.pushNamed(context, '/camera'),
   ),
 
-  // Scan Capture
+  // -- SECTION: CAMERA CAPTURE FLOW --
   '/camera': (context) => const CameraPage(),
 
   '/crop': (context) {
@@ -172,23 +220,26 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
 
+  // -- SECTION: ANALYSIS LOGIC --
   '/analyzing': (context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     return AnalyzingPage(
       onComplete: () {
-        // Forward the arguments to the complete page
+        // Forward the arguments to the complete page if needed
         Navigator.pushNamed(context, '/complete', arguments: args);
       },
     );
   },
 
   '/results': (context) {
+    // -- DATA EXTRACTION --
     final analysisResult = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
     final String classification = analysisResult['classification'];
 
-    // FIXED: Parse as double, not String
+    // -- ALGORITHM: TYPE CASTING --
+    // Control: Ensure numeric types from JSON are safely converted to double
     final double confidence = (analysisResult['confidence'] as num).toDouble();
     final double classificationScore = (analysisResult['classificationScore'] as num).toDouble();
 
@@ -196,22 +247,23 @@ final Map<String, WidgetBuilder> appRoutes = {
     final String explanationText = analysisResult['explanation'];
     final String userName = analysisResult['userName'] ?? 'Guest';
 
+    // Logic: Convert string classification to Enum for the UI
     final CataractType cataractType = _determineCataractType(classification);
 
     return ResultsPage(
       userName: userName,
-      confidence: confidence, // Now passing as double (e.g., 0.9876)
-      classificationScore: classificationScore, // Now passing as double (e.g., 0.7543)
+      confidence: confidence, // Passed as double (e.g., 0.9876)
+      classificationScore: classificationScore, // Passed as double (e.g., 0.7543)
       explainedImageBase64: explainedImageBase64,
       explanationText: explanationText,
       cataractType: cataractType,
     );
   },
 
-  // Upload Flow
+  // -- SECTION: UPLOAD FLOW --
   '/uploadSelect': (context) => SelectPage(
     onNext: () {
-      // This onNext is handled inside the SelectPage widget itself
+      // Note: Navigation logic handled internally by SelectPage
     },
   ),
 
@@ -237,7 +289,6 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
 
+  // -- SECTION: HELP --
   '/cropGuide': (context) => const CropGuidePage(),
-
-
 };

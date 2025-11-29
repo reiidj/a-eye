@@ -1,16 +1,59 @@
+/*
+ * Program Title: crop_guide_page.dart
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module is a support screen within the "Analysis Flow". It is
+ *   accessible from the `CropImagePage`, `UploadCropPage`, and `InvalidImagePage`.
+ *   Its specific role is to educate the user on how to prepare their image
+ *   for the AI, providing visual examples of "Good" vs "Bad" crops to increase
+ *   the likelihood of a successful classification.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To provide static, visual instructions on how to correctly isolate the
+ *   pupil in an image, thereby improving the accuracy of the ML model.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * bool (isGoodExample): Flag used in the helper method to toggle between
+ *       positive (Green/Check) and negative (Red/Cross) styling.
+ *
+ *   Algorithms:
+ *     * Modular Widget Construction: Uses `_buildGuideSection` to reduce code
+ *       duplication when rendering similar layout blocks.
+ *
+ *   Control:
+ *     * Navigation: `Navigator.pop` returns the user to the previous active
+ *       task (Cropping or Reviewing errors).
+ */
+
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Class: CropGuidePage
+/// Purpose: Stateless widget displaying educational content on image cropping.
 class CropGuidePage extends StatelessWidget {
   const CropGuidePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // -- ALGORITHM: RESPONSIVE SIZING --
+    // Fetch screen dimensions for proportional scaling
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: const Color(0xFF131A21),
+      // -- UI COMPONENT: HEADER --
       appBar: AppBar(
         backgroundColor: const Color(0xFF131A21),
         elevation: 0,
@@ -28,12 +71,15 @@ class CropGuidePage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
+      // -- UI COMPONENT: SCROLLABLE BODY --
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: screenHeight * 0.02),
+
+            // -- UI COMPONENT: GOOD EXAMPLE SECTION --
             _buildGuideSection(
               context,
               title: "Good Crop",
@@ -44,6 +90,8 @@ class CropGuidePage extends StatelessWidget {
               isGoodExample: true,
             ),
             SizedBox(height: screenHeight * 0.04),
+
+            // -- UI COMPONENT: BAD EXAMPLE SECTION --
             _buildGuideSection(
               context,
               title: "Bad Crop",
@@ -54,6 +102,8 @@ class CropGuidePage extends StatelessWidget {
               isGoodExample: false,
             ),
             SizedBox(height: screenHeight * 0.05),
+
+            // -- UI COMPONENT: DISMISS BUTTON --
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -83,18 +133,27 @@ class CropGuidePage extends StatelessWidget {
     );
   }
 
+  /*
+   * Function: _buildGuideSection
+   * Purpose: Helper method to render consistent instructional blocks.
+   * Inputs: Title, Description, Image Path, and a Boolean flag for styling.
+   */
   Widget _buildGuideSection(BuildContext context,
       {required String title,
         required String description,
         required String imagePath,
         required bool isGoodExample}) {
     final screenWidth = MediaQuery.of(context).size.width;
+
+    // -- ALGORITHM: CONDITIONAL STYLING --
+    // Select color and icon based on whether this is a "Good" or "Bad" example
     final iconColor = isGoodExample ? Colors.green : Colors.red;
     final iconData = isGoodExample ? Icons.check_circle : Icons.cancel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section Header
         Row(
           children: [
             Icon(iconData, color: iconColor, size: screenWidth * 0.08),
@@ -110,6 +169,8 @@ class CropGuidePage extends StatelessWidget {
           ],
         ),
         SizedBox(height: screenWidth * 0.03),
+
+        // Example Image Container
         Container(
           height: screenWidth * 0.5,
           width: double.infinity,
@@ -122,6 +183,7 @@ class CropGuidePage extends StatelessWidget {
           child: Image.asset(
             imagePath,
             fit: BoxFit.cover,
+            // Error Handling: Fallback text if asset is missing
             errorBuilder: (context, error, stackTrace) {
               return Center(
                 child: Column(
@@ -142,6 +204,8 @@ class CropGuidePage extends StatelessWidget {
           ),
         ),
         SizedBox(height: screenWidth * 0.03),
+
+        // Description Text
         Text(
           description,
           style: GoogleFonts.urbanist(

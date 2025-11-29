@@ -1,10 +1,51 @@
+/*
+ * Program Title: A-Eye: Cataract Maturity Classification Tool
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *  This module is a core component of the "Onboarding Flow" located within
+ *  the `lib/screens/onboarding/` directory. It functions as an intermediate
+ *  data collection screen in the user initialization sequence (LandingPage ->
+ *  NameInputPage -> AgeSelectPage -> GenderSelectPage). It captures the user's
+ *  gender identity and passes this state via callbacks to the navigation
+ *  controller, contributing to the profile object that will eventually be
+ *  committed to Firestore.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To provide a graphical interface for users to select their gender,
+ *   ensuring valid input before proceeding to the next registration step.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * selectedGender (String?): Nullable state variable to track user input.
+ *
+ *   Algorithms:
+ *     * State Management: Updates UI immediately upon radio button selection.
+ *
+ *   Control:
+ *     * Input Validation: Checks if `selectedGender` is null before allowing 'Next'.
+ *     * Conditional Styling: Dynamic border rendering based on selection state.
+ */
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Class: GenderSelectPage
+/// Purpose: Stateful widget for the second step of user onboarding.
 class GenderSelectPage extends StatefulWidget {
+  // -- INPUT PARAMETERS --
+  // Callbacks to handle navigation logic defined in the parent/router
   final void Function(String gender) onNext;
   final void Function(String gender) onBack;
-  final String? initialGender;
+  final String? initialGender; // Pre-fill if coming back from next screen
 
   const GenderSelectPage({
     super.key,
@@ -18,23 +59,32 @@ class GenderSelectPage extends StatefulWidget {
 }
 
 class _GenderSelectPageState extends State<GenderSelectPage> {
+  // -- LOCAL STATE --
   String? selectedGender;
 
   @override
   void initState() {
     super.initState();
+    // Initialize state with passed data (if any) to preserve user context
     selectedGender = widget.initialGender;
   }
 
-  // GENDER OPTION WIDGET
+  /*
+   * Function: genderOption
+   * Purpose: Helper widget to create consistent, selectable gender cards.
+   * Input: gender (String) - The label to display.
+   * output: Widget - A styled container with a RadioListTile.
+   */
   Widget genderOption(String gender) {
+    // -- ALGORITHM: SELECTION CHECK --
     final bool isSelected = selectedGender == gender;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      // Structured Programming: Encapsulating style logic
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        // Use border instead of gradient for the highlight effect
+        // Conditional styling: Show border only if selected
         border: isSelected
             ? Border.all(
           color: const Color(0xFF5244F3),
@@ -44,8 +94,8 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white10, // Semi-transparent color
-          borderRadius: BorderRadius.circular(14), // Match outer radius
+          color: Colors.white10, // Semi-transparent background
+          borderRadius: BorderRadius.circular(14),
         ),
         child: RadioListTile<String>(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -55,6 +105,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
           ),
           value: gender,
           groupValue: selectedGender,
+          // Event Handler: Update state to trigger rebuild
           onChanged: (value) => setState(() => selectedGender = value),
           activeColor: const Color(0xFF5244F3),
         ),
@@ -64,6 +115,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Responsive Design: accurate sizing based on screen dimensions
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -71,7 +123,8 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Glowing circles and other UI elements...
+          // -- UI COMPONENT: BACKGROUND --
+          // Decorative gradient circles
           Positioned(
             top: -500,
             right: -500,
@@ -109,11 +162,11 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
             ),
           ),
 
-          // Main scrollable content
+          // -- MAIN CONTENT --
           SafeArea(
             child: Column(
               children: [
-                // Step indicator
+                // Step indicator (Visualizing Step 2 of 3)
                 Padding(
                   padding: EdgeInsets.only(top: screenHeight * 0.02),
                   child: Row(
@@ -137,6 +190,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
+                      // Grayed out step 3
                       Container(
                         width: screenWidth * 0.28,
                         height: 6,
@@ -150,17 +204,18 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                   ),
                 ),
 
-                // Scrollable content area
+                // Scrollable Form Area
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
+                        // Calculate minimum height to fill screen minus headers/footers
                         minHeight: screenHeight -
                             MediaQuery.of(context).padding.top -
                             MediaQuery.of(context).padding.bottom -
                             screenHeight * 0.02 -
-                            120, // Approximate space for indicator and buttons
+                            120,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 30.0),
@@ -179,7 +234,8 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                             ),
                             SizedBox(height: screenHeight * 0.04),
 
-                            // Gender options
+                            // -- UI COMPONENT: OPTIONS --
+                            // Using helper function to render inputs
                             genderOption("Male"),
                             const SizedBox(height: 15),
                             genderOption("Female"),
@@ -193,7 +249,7 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                   ),
                 ),
 
-                // Navigation buttons
+                // -- NAVIGATION CONTROLS --
                 Padding(
                   padding: const EdgeInsets.only(
                     left: 30,
@@ -203,13 +259,16 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Previous Button
                       Flexible(
                         child: OutlinedButton(
                           onPressed: () {
+                            // -- CONTROL: NAVIGATION LOGIC --
+                            // Allows going back even if null, passing empty string if so
                             if (selectedGender != null) {
-                              widget.onBack(selectedGender!); // Save + go back
+                              widget.onBack(selectedGender!);
                             } else {
-                              widget.onBack(''); // If nothing selected yet, still go back
+                              widget.onBack('');
                             }
                           },
                           style: OutlinedButton.styleFrom(
@@ -232,12 +291,15 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
+                      // Next Button
                       Flexible(
                         child: ElevatedButton(
                           onPressed: () {
+                            // -- CONTROL: VALIDATION --
                             if (selectedGender != null) {
                               widget.onNext(selectedGender!);
                             } else {
+                              // Error Message: Feedback for missing input
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("Please select a gender"),
@@ -271,7 +333,6 @@ class _GenderSelectPageState extends State<GenderSelectPage> {
               ],
             ),
           ),
-          //end of navigation buttons
         ],
       ),
     );
