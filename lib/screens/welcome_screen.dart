@@ -439,7 +439,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             child: Image.asset(
               'assets/images/Welcome Card.png',
               fit: BoxFit.contain,
-              height: screenHeight * 0.45,
+              height: screenHeight * 0.3,
             ),
           ),
         ],

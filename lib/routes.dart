@@ -44,9 +44,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:a_eye/screens/onboarding/landing_page.dart';
-import 'package:a_eye/screens/onboarding/name_input_page.dart';
-import 'package:a_eye/screens/onboarding/gender_select_page.dart';
-import 'package:a_eye/screens/onboarding/age_select_page.dart';
+import 'package:a_eye/screens/onboarding/user_data_page.dart';
 
 // Welcome page
 import 'package:a_eye/screens/welcome_screen.dart';
@@ -110,51 +108,12 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/landing': (context) => LandingPage(
     onNext: () {
       // Control: Replace stack to prevent going back to splash
-      Navigator.pushReplacementNamed(context, '/name');
+      Navigator.pushReplacementNamed(context, '/userData');
     },
   ),
 
-  '/name': (context) => NameInputPage(
-    onNext: (name) {
-      Navigator.pushNamed(
-        context,
-        '/gender',
-        arguments: name, // Passing data to next route
-      );
-    },
-    onBack: () {
-      Navigator.pushReplacementNamed(context, '/');
-    },
-  ),
-
-  '/gender': (context) {
-    // Algorithm: Extract argument passed from previous screen
-    final userName = ModalRoute.of(context)!.settings.arguments as String;
-    return GenderSelectPage(
-      onNext: (gender) {
-        Navigator.pushNamed(
-          context,
-          '/age',
-          arguments: {'name': userName, 'gender': gender}, // Aggregate data
-        );
-      },
-      onBack: (gender) => Navigator.pop(context),
-    );
-  },
-
-  '/age': (context) {
-    // Get the arguments map from the previous page
-    final args = ModalRoute.of(context)!.settings.arguments as Map;
-    final userName = args['name'];
-    final gender = args['gender'];
-
-    // Pass data to page; onNext logic is handled internally by AgeSelectPage
-    return AgeSelectPage(
-      userName: userName,
-      gender: gender,
-      onBack: (ageGroup) => Navigator.pop(context),
-    );
-  },
+  //  New Consolidated Onboarding Route
+  '/userData': (context) => const UserDataPage(),
 
   // -- SECTION: DASHBOARD --
   '/welcome': (context) {

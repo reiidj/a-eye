@@ -162,7 +162,7 @@ class LandingPage extends StatelessWidget {
             bottom: screenHeight * 0.06,
             child: GradientSlideToAct(
               height: screenHeight * 0.065,
-              text: 'Slide to Begin',
+              text: 'Swipe right to start',
               textStyle: GoogleFonts.urbanist(
                 fontSize: screenWidth * 0.05,
                 color: Colors.white,
