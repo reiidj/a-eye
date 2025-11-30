@@ -163,7 +163,7 @@ class ResultsPage extends StatelessWidget {
       BuildContext context, double screenWidth, String explainedImageBase64) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(screenWidth * 0.05),
+      padding: EdgeInsets.all(screenWidth * 0.07),
       decoration: BoxDecoration(
         color: const Color(0xFF161616),
         borderRadius: BorderRadius.circular(16),
@@ -172,11 +172,11 @@ class ResultsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _buildStatusIndicator(screenWidth),
-          SizedBox(height: screenWidth * 0.04),
+          SizedBox(height: screenWidth * 0.06),
           _buildDescriptionText(screenWidth),
-          SizedBox(height: screenWidth * 0.05),
+          SizedBox(height: screenWidth * 0.06),
           _buildScoreDisplays(screenWidth),
-          SizedBox(height: screenWidth * 0.05),
+          SizedBox(height: screenWidth * 0.06),
           _buildEyeImage(screenWidth, explainedImageBase64),
         ],
       ),
@@ -220,15 +220,8 @@ class ResultsPage extends StatelessWidget {
             '${(confidence * 100).toStringAsFixed(1)}%', // Algorithm: Format double to percentage string
             style: GoogleFonts.urbanist(
               color: const Color(0xFF5244F3),
-              fontSize: screenWidth * 0.065,
-              fontWeight: FontWeight.bold,
-              shadows: [ // A subtle glow effect for emphasis
-                Shadow(
-                  blurRadius: 10.0,
-                  color: const Color(0xFF8BC36A).withOpacity(0.5),
-                  offset: Offset.zero,
-                ),
-              ],
+              fontSize: screenWidth * 0.045,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -310,7 +303,7 @@ class ResultsPage extends StatelessWidget {
         style: GoogleFonts.urbanist(
           fontSize: screenWidth * 0.04,
           color: Colors.white,
-          height: 1.5,
+          height: 1.6,
         ),
         children: [
           TextSpan(text: "The eye image shows characteristics of "),
@@ -318,12 +311,17 @@ class ResultsPage extends StatelessWidget {
             text: cataractType == CataractType.mature ? "a mature " : "an immature ",
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          const TextSpan(text: "cataract. "),
+          const TextSpan(text: "cataract.\n\n "),
           TextSpan(
             text: cataractType == CataractType.mature
-                ? "Surgical removal is recommended. "
+                ? "Surgical removal may be recommended. "
                 : "Constant monitoring is advisable. ",
             style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(
+            text: cataractType == CataractType.mature
+                ? "Mature cataracts significantly obstruct vision and often require intervention." // Added Context
+                : "Immature cataracts are in the early stages and may not require immediate surgery.", // Added Context
           ),
           const TextSpan(
               text: "Please consult an ophthalmologist for further evaluation.")
@@ -424,42 +422,61 @@ class ResultsPage extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, double screenWidth) {
+    final isMature = cataractType == CataractType.mature;
     return Column(
       children: [
-        // Logic: Only show specialist notification for Mature cataracts
-        if (cataractType == CataractType.mature)
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.group_add_outlined),
-              label: Text(
-                "Notify Eye Specialist",
-                style: GoogleFonts.urbanist(
-                  fontSize: screenWidth * 0.045,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onPressed: () async {
-                // Control: Launch external URL
-                final url = Uri.parse('https://a-eye-cataract-classification-tool.github.io/A-EYE-Website/doctors.html');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5244F3),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+        // TICKET 2: Show button for BOTH, but change style based on severity
+        SizedBox(
+          width: double.infinity,
+          child: isMature
+              ? ElevatedButton.icon( // FILLED Button for Mature (Primary Action)
+            icon: const Icon(Icons.group_add_outlined),
+            label: Text(
+              "Notify Eye Specialist",
+              style: GoogleFonts.urbanist(
+                fontSize: screenWidth * 0.045,
+                fontWeight: FontWeight.w600,
               ),
             ),
+            onPressed: () => _launchDoctorUrl(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5244F3),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+            ),
+          )
+              : OutlinedButton.icon( // OUTLINED Button for Immature (Secondary Action)
+            icon: const Icon(Icons.group_add_outlined),
+            label: Text(
+              "Notify Eye Specialist",
+              style: GoogleFonts.urbanist(
+                fontSize: screenWidth * 0.045,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onPressed: () => _launchDoctorUrl(),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+            ),
           ),
-        if (cataractType == CataractType.mature)
-          SizedBox(height: screenWidth * 0.05),
+        ),
+        SizedBox(height: screenWidth * 0.04),
         _buildConfirmExitButton(context, screenWidth),
       ],
     );
+  }
+
+  Future<void> _launchDoctorUrl() async {
+    final url = Uri.parse('https://a-eye-cataract-classification-tool.github.io/A-EYE-Website/doctors.html');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildConfirmExitButton(BuildContext context, double screenWidth) {

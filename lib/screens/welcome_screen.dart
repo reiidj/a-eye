@@ -285,27 +285,22 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestoreService.getScansForUser(_currentUser!.uid),
       builder: (context, snapshot) {
-        // Control: Loading State
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        // Control: Error State
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
         }
-
-        // Algorithm: Check for empty dataset
         final bool hasHistory = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Info Card
             Container(
-              padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
+              width: double.infinity, // 1. Fixes Grid Alignment
+              padding: const EdgeInsets.all(22), // Balanced padding
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withOpacity(0.1), // 2. Kept Original Color
+                borderRadius: BorderRadius.circular(16), // 3. Kept Original Radius
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,30 +308,26 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   Text(
                     hasHistory ? "Thanks for choosing A-Eye!" : "Welcome to A-Eye!",
                     style: GoogleFonts.urbanist(
-                        fontSize: 20,
+                        fontSize: 20, // 4. Kept Original Font
                         fontWeight: FontWeight.w600,
                         color: Colors.white),
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Text(
-                      hasHistory
-                          ? "Ready for your next scan? Tap below to get started."
-                          : "Let's begin your journey with your very first eye scan!",
-                      style: GoogleFonts.urbanist(fontSize: 17, color: Colors.white),
+                  // 5. REMOVED INNER BOX (Simplified)
+                  Text(
+                    hasHistory
+                        ? "Ready for your next scan? Tap below to get started."
+                        : "Let's begin your journey with your very first eye scan!",
+                    style: GoogleFonts.urbanist(
+                      fontSize: 17, // 6. Kept Original Font
+                      color: Colors.white,
+                      height: 1.4, // Added slight spacing for readability
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-
-            // Conditional Render: History List vs Empty Placeholder
             if (hasHistory)
               _buildHistoryList(snapshot.data!.docs, screenHeight)
             else
@@ -439,7 +430,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             child: Image.asset(
               'assets/images/Welcome Card.png',
               fit: BoxFit.contain,
-              height: screenHeight * 0.3,
+              height: screenHeight * 0.35,
             ),
           ),
         ],
