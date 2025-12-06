@@ -330,7 +330,7 @@ class _CameraPageState extends State<CameraPage> {
                         child: Text(
                           "Capture Guide",
                           style: GoogleFonts.urbanist(
-                            color: const Color(0xFF5244F3),
+                            color: Colors.white,
                             fontSize: screenWidth * 0.045,
                             fontWeight: FontWeight.w600,
                           ),

@@ -81,18 +81,21 @@ class CheckSurroundings1 extends StatelessWidget {
 
           // Layer 2: Bottom Action Button
           Positioned(
-            bottom: 20, // Fixed margin from bottom of screen
-            left: 0,
-            right: 0,
+            bottom: 20,
+            left: 20,
+            right: 20,
             child: SafeArea(
-              child: Center(
+              child: SizedBox(
+                width: double.infinity,
                 child: OutlinedButton(
                   // Control: Execute the passed callback
                   onPressed: onNext,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)
+                    ),
                   ),
                   child: Text(
                     "Yes, I'm scanning by myself",

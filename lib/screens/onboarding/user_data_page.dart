@@ -133,7 +133,7 @@ class _UserDataPageState extends State<UserDataPage> {
         TextFormField(
           controller: controller,
           keyboardType: type,
-          style: GoogleFonts.urbanist(color: Colors.white), // Consistent Font
+          style: GoogleFonts.urbanist(color: Colors.white, fontSize: 16),
           validator: (value) {
             if (value == null || value.trim().isEmpty) return 'Required';
             if (type == TextInputType.emailAddress && !value.contains('@')) {
@@ -168,7 +168,7 @@ class _UserDataPageState extends State<UserDataPage> {
             style: GoogleFonts.urbanist(color: Colors.white, fontSize: 16)),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(14), // Matches reference radius
@@ -179,8 +179,8 @@ class _UserDataPageState extends State<UserDataPage> {
               isExpanded: true,
               dropdownColor: const Color(0xFF161616),
               hint: Text("Select $label",
-                  style: GoogleFonts.urbanist(color: Colors.grey.shade600)),
-              style: GoogleFonts.urbanist(color: Colors.white), // Consistent Font
+                  style: GoogleFonts.urbanist(color: Colors.grey.shade600, fontSize: 17)),
+              style: GoogleFonts.urbanist(color: Colors.white, fontSize: 16), // Consistent Font
               items: items.map((String item) {
                 return DropdownMenuItem<String>(
                   value: item,
@@ -266,13 +266,13 @@ class _UserDataPageState extends State<UserDataPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Top Spacer
-                              SizedBox(height: screenHeight * 0.04),
+                              SizedBox(height: screenHeight * 0.08),
 
                               // Header Section
                               Text(
                                 "Tell us about yourself",
                                 style: GoogleFonts.urbanist(
-                                  fontSize: screenWidth * 0.09, // Responsive font
+                                  fontSize: screenWidth * 0.07, // Responsive font
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),

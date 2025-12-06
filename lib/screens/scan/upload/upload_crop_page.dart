@@ -249,18 +249,15 @@ class _UploadCropPageState extends State<UploadCropPage> {
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(32),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.all(8),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Icon(Icons.remove_red_eye_outlined,
-                            color: Colors.white),
-                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "Drag, zoom, and position your eye within the guide.",
+                            "Please align your eye with the guide. You may zoom and drag the photo.",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.urbanist(
                                 fontSize: screenWidth * 0.04, color: Colors.white),
@@ -330,31 +327,6 @@ class _UploadCropPageState extends State<UploadCropPage> {
 
               const Spacer(),
 
-              // -- UI COMPONENT: RE-UPLOAD BUTTON --
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Return to gallery selection
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: Text(
-                    "Re-Upload Image",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.urbanist(
-                        fontSize: screenWidth * 0.045,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  ),
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.02),
-
               // -- UI COMPONENT: ANALYZE BUTTON --
               // Wrapped button in SizedBox to enforce full width
               SizedBox(
@@ -371,8 +343,9 @@ class _UploadCropPageState extends State<UploadCropPage> {
                     backgroundColor: _imageReady && !_isCropping
                         ? const Color(0xFF5244F3)
                         : Colors.grey,
-                    padding:
-                    EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                    padding: EdgeInsets.symmetric(
+                      vertical: screenHeight * 0.015,
+                    ),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20)),
                   ),
@@ -389,9 +362,9 @@ class _UploadCropPageState extends State<UploadCropPage> {
                           ),
                         )
                       else
-                        SizedBox(
-                          height: 40,
-                          width: 35,
+                        SizedBox(// icon image
+                          height: screenWidth * 0.1,
+                          width: screenWidth * 0.0875,
                           child: Image.asset(
                             'assets/images/Eye Scan 2.png',
                             fit: BoxFit.contain,
@@ -411,7 +384,32 @@ class _UploadCropPageState extends State<UploadCropPage> {
                   ),
                 ),
               ),
-              SizedBox(height: screenHeight * 0.01),
+              SizedBox(height: screenHeight * 0.02),
+
+              // -- UI COMPONENT: RE-UPLOAD BUTTON --
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Return to gallery selection
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  child: Text(
+                    "Re-Upload Image",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.urbanist(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
 
               // Help Link
               TextButton(
@@ -421,11 +419,10 @@ class _UploadCropPageState extends State<UploadCropPage> {
                 child: Text(
                   "Crop Guide",
                   style: GoogleFonts.urbanist(
-                    fontSize: screenWidth * 0.04,
+                    fontSize: screenWidth * 0.05,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF5244F3),
                     decorationColor: const Color(0xFF5244F3),
-                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),

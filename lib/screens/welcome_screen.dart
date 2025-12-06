@@ -168,29 +168,40 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         screenWidth * 0.05,
-        10,
+        10, // Top padding
         screenWidth * 0.05,
-        10,
+        10, // Bottom padding
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center, // Ensures vertical alignment
         children: [
-          // Profile Button
+          // 1. Profile Button (Image Asset)
           GestureDetector(
             onTap: widget.onProfile,
             child: Image.asset(
               'assets/images/Profile btn.png',
               width: screenWidth * 0.12,
               height: screenWidth * 0.12,
+              fit: BoxFit.contain, // Ensures it doesn't distort
             ),
           ),
-          // Help Button
+
+          // 2. Help Button (Refactored to Standard Icon)
+          // Solves overflow and clarity issues
           GestureDetector(
             onTap: widget.onGuide,
-            child: Image.asset(
-              'assets/images/Help button.png',
-              width: screenWidth * 0.15,
-              height: screenWidth * 0.25,
+            child: Container(
+              padding: const EdgeInsets.all(10), // Touch target padding
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1), // Subtle glass effect
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.info_outline_rounded, // Standard "Info" icon
+                color: Colors.white,
+                size: screenWidth * 0.07, // ~28px on typical phones
+              ),
             ),
           ),
         ],
@@ -217,7 +228,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         return Text.rich(
           TextSpan(
             style: GoogleFonts.urbanist(
-              fontSize: screenWidth * 0.1,
+              fontSize: screenWidth * 0.08,
               color: Colors.white,
             ),
             children: [
@@ -306,18 +317,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    hasHistory ? "Thanks for choosing A-Eye!" : "Welcome to A-Eye!",
-                    style: GoogleFonts.urbanist(
-                        fontSize: 20, // 4. Kept Original Font
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white),
-                  ),
-                  const SizedBox(height: 12),
-                  // 5. REMOVED INNER BOX (Simplified)
-                  Text(
                     hasHistory
-                        ? "Ready for your next scan? Tap below to get started."
-                        : "Let's begin your journey with your very first eye scan!",
+                        ? "Ready for your next scan with A-Eye? Tap below to get started."
+                        : "Let's begin your journey with your very first eye scan with A-Eye!",
                     style: GoogleFonts.urbanist(
                       fontSize: 17, // 6. Kept Original Font
                       color: Colors.white,
@@ -425,14 +427,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     return Center(
       child: Column(
         children: [
+
+          const SizedBox(height: 24),
+
           ClipRRect(
             borderRadius: BorderRadius.circular(32),
             child: Image.asset(
               'assets/images/Welcome Card.png',
               fit: BoxFit.contain,
-              height: screenHeight * 0.35,
+              height: screenHeight * 0.45,
             ),
           ),
+
+          const SizedBox(height: 8),
+
         ],
       ),
     );

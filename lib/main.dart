@@ -43,7 +43,6 @@
  *     * Widget Tree Mounting: `runApp` attaches the `MyApp` widget to the screen.
  */
 
-
 import 'package:flutter/material.dart';
 import 'routes.dart';
 import 'dart:developer' as developer;
@@ -51,26 +50,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Function: main
-/// Purpose: The asynchronous entry point for the Dart execution.
 void main() async {
-  // -- CONTROL: ENGINE BINDING --
-  // Required before making any async calls (like Firebase) in main()
   WidgetsFlutterBinding.ensureInitialized();
-
-  // -- ALGORITHM: FIREBASE INIT --
-  // Connects the app to the specific Google Cloud project defined in options
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // -- ALGORITHM: AUTO-LOGIN --
-  // Sign in the user anonymously immediately on launch.
-  // This ensures a valid UID exists for Firestore security rules.
+  // Sign in anonymously to ensure Firestore access
   await FirebaseAuth.instance.signInAnonymously();
 
-  // -- CONTROL: GLOBAL ERROR LOGGING --
-  // Intercepts framework errors and logs them to the console/debugger
   FlutterError.onError = (FlutterErrorDetails details) {
     developer.log(
       details.exceptionAsString(),
@@ -79,34 +67,72 @@ void main() async {
     );
   };
 
-  // Mount the root widget
   runApp(const MyApp());
 }
 
-/// Class: MyApp
-/// Purpose: The root Widget of the application tree.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Disable the "Debug" sash in the corner
       debugShowCheckedModeBanner: false,
       title: 'A-Eye',
-
-      // -- UI COMPONENT: THEME CONFIGURATION --
-      // Sets global styles (Font, Background Color)
       theme: ThemeData(
         fontFamily: 'Urbanist',
         scaffoldBackgroundColor: Colors.black,
         useMaterial3: true,
-      ),
 
-      // -- CONTROL: NAVIGATION ROUTING --
-      // Defines the starting screen and the map of all available screens
+        // --- TICKET 3: GLOBAL UI STANDARDIZATION ---
+        // 1. Standardized Primary Buttons (Filled)
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF5244F3), // Brand Color
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 56), // Fixed Height
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16), // Fixed Radius
+            ),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Urbanist',
+            ),
+            elevation: 0,
+          ),
+        ),
+
+        // 2. Standardized Secondary Buttons (Outlined)
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 56), // Fixed Height
+            side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20), // Fixed Radius
+            ),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Urbanist',
+            ),
+          ),
+        ),
+
+        // 3. Standardized Text Buttons (Ghost)
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF5244F3),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Urbanist',
+            ),
+          ),
+        ),
+      ),
       initialRoute: '/',
-      routes: appRoutes, // Map defined in routes.dart
+      routes: appRoutes,
     );
   }
 }

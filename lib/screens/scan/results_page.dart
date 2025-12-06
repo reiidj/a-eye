@@ -486,7 +486,7 @@ class ResultsPage extends StatelessWidget {
         icon:
         Icon(Icons.download_for_offline_outlined, size: screenWidth * 0.06),
         label: Text(
-          "Save Report & Exit",
+          "Save & Exit Report",
           style: GoogleFonts.urbanist(
             fontSize: screenWidth * 0.05,
             fontWeight: FontWeight.w600,

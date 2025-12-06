@@ -121,19 +121,19 @@ class _SelectPageState extends State<SelectPage> {
           // Fixed at the bottom center of the screen
           Positioned(
             bottom: 20,
-            left: 0,
-            right: 0,
+            left: 20,
+            right: 20,
             child: SafeArea(
-              child: Center(
+              child: SizedBox(
+                width: double.infinity,
                 child: OutlinedButton(
-                  // Control: Trigger file picker on tap
                   onPressed: _pickImage,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 50, vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                   child: Text(
                     "Upload Image",

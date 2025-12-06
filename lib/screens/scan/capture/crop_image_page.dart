@@ -329,31 +329,7 @@ class CropImagePageState extends State<CropImagePage> {
               const Spacer(), // Pushes buttons to the bottom
 
               // -- UI COMPONENT: ACTION BUTTONS --
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: OutlinedButton.styleFrom(
-                    side:
-                    const BorderSide(color: Color(0xFF5244F3), width: 2),
-                    padding: EdgeInsets.symmetric(
-                      vertical: screenHeight * 0.02,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    "Retake Photo",
-                    style: GoogleFonts.urbanist(
-                      fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.02),
+              // Analyze Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -413,7 +389,35 @@ class CropImagePageState extends State<CropImagePage> {
                   ),
                 ),
               ),
-              SizedBox(height: screenHeight * 0.01),
+              SizedBox(height: screenHeight * 0.02),
+
+              // Retake button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    side:
+                    const BorderSide(color: Color(0xFF5244F3), width: 2),
+                    padding: EdgeInsets.symmetric(
+                      vertical: screenHeight * 0.02,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    "Retake Photo",
+                    style: GoogleFonts.urbanist(
+                      fontSize: screenWidth * 0.045,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+
               // Help Link
               TextButton(
                 onPressed: () {
@@ -422,11 +426,10 @@ class CropImagePageState extends State<CropImagePage> {
                 child: Text(
                   "Crop Guide",
                   style: GoogleFonts.urbanist(
-                    fontSize: screenWidth * 0.04,
+                    fontSize: screenWidth * 0.05,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF5244F3),
                     decorationColor: const Color(0xFF5244F3),
-                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),
