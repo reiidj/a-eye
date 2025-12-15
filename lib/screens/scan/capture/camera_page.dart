@@ -242,6 +242,7 @@ class _CameraPageState extends State<CameraPage> {
               ),
 
               // -- UI COMPONENT: CONTROLS AREA --
+              // -- UI COMPONENT: CONTROLS AREA --
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -257,7 +258,7 @@ class _CameraPageState extends State<CameraPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Flip Camera Button
+                      // 1. Flip Camera Button
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -282,7 +283,7 @@ class _CameraPageState extends State<CameraPage> {
                         ],
                       ),
 
-                      // Shutter Button (Visual Design)
+                      // 2. Shutter Button
                       GestureDetector(
                         onTap: _takePicture,
                         child: Container(
@@ -310,32 +311,42 @@ class _CameraPageState extends State<CameraPage> {
                           ),
                         ),
                       ),
-                      SizedBox(height: screenHeight * 0.02),
 
-                      // Guide Button
-                      OutlinedButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/guide');
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF5244F3), width: 2),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.08,
-                            vertical: screenHeight * 0.015,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(32),
-                          ),
-                        ),
-                        child: Text(
-                          "Capture Guide",
-                          style: GoogleFonts.urbanist(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.045,
-                            fontWeight: FontWeight.w600,
+                      SizedBox(height: screenHeight * 0.03), // Spacing
+
+                      // 3. Guide Button (Fixed: Removed Positioned, Added Padding)
+                      Padding(
+                        // Responsive padding: 5% of screen width on left/right
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/guide');
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF5244F3), width: 2),
+                              padding: EdgeInsets.symmetric(
+                                vertical: screenHeight * 0.02, // Responsive vertical padding
+                              ),
+                              shape: RoundedRectangleBorder(
+                                // Matched to Upload Button's radius
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: Text(
+                              "Capture Guide",
+                              style: GoogleFonts.urbanist(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.045, // Responsive font size
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ),
+
+                      // Bottom spacing to ensure it doesn't touch the edge
                       SizedBox(height: screenHeight * 0.05),
                     ],
                   ),
