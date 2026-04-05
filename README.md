@@ -21,7 +21,7 @@ You can download and install the latest Android build directly from our releases
 
 | Image Upload | Classification Result |
 | :---: | :---: |
-| *(screenshot link placeholder)* | *(screenshot link placeholder)* |
+| ![A-Eye Upload Image Screen](assets/images/a-eye-upload-readme.jpg) | ![A-Eye Classification Screen](assets/images/a-eye-classification-readme.jpg) |
 
 ## Tech Stack & Tools
 
