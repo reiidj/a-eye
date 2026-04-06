@@ -7,7 +7,7 @@ This application provides a real-world, on-device system for classifying the mat
 ## Download
 
 You can download and install the latest Android build directly from our releases.
-* **[Download Latest A-Eye APK](https://drive.google.com/drive/folders/1dUZsaA_YMFwDLsnimx_p6r-dFw2Z_5za?usp=drive_link)**
+* **[Download Latest A-Eye APK](https://github.com/reiidj/a-eye/releases/download/v1.0.0/A-Eye-v1.0.0.apk)**
 
 ## Key Features
 
