@@ -1,3 +1,47 @@
+/*
+ * Program Title: result_card.dart
+ *
+ * Programmers:
+ *   Albonia, Jade Lorenz
+ *   Villegas, Jedidiah
+ *   Velante, Kamilah Kaye
+ *   Rivera, Rei Djemf M.
+ *
+ * Where the program fits in the general system design:
+ *   This module is located in `lib/widgets/` and serves as a reusable UI component
+ *   used primarily by the `WelcomeScreen`. It represents a single historical
+ *   analysis record. Beyond simple display, it encapsulates the logic to
+ *   regenerate and share a PDF report for that specific historical entry,
+ *   interacting with the `PdfBuilder` service directly.
+ *
+ * Date Written: October 2025
+ * Date Revised: November 2025
+ *
+ * Purpose:
+ *   To display a concise summary of a previous scan (Date, Result, Confidence)
+ *   and provide a direct interface for the user to export that specific record
+ *   as a PDF document.
+ *
+ * Data Structures, Algorithms, and Control:
+ *   Data Structures:
+ *     * ResultCard (StatefulWidget): Holds all metadata required to reconstruct
+ *       the full report (UserName, Scores, Explanation).
+ *     * File (dart:io): Handles the local image file reference for the thumbnail.
+ *
+ *   Algorithms:
+ *     * On-Demand Generation: PDF reports are not stored; they are generated
+ *       algorithmically via `_generateAndSharePdf` only when the user taps the card.
+ *     * Visual Hierarchy: Uses conditional logic to render "Mature" results with
+ *       urgent red styling versus standard styling for "Immature" results.
+ *
+ *   Control:
+ *     * State Management: Uses `_isGenerating` semaphore to prevent multiple
+ *       tap events while the PDF service is busy.
+ *     * Error Handling: Validates that all required fields are present before
+ *       attempting PDF generation to prevent null pointer exceptions.
+ */
+
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,17 +50,20 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:a_eye/services/pdf_builder.dart';
 
+/// Class: ResultCard
+/// Purpose: Reusable widget displaying a single scan history item with PDF export capabilities.
 class ResultCard extends StatefulWidget {
+  // -- INPUT PARAMETERS --
   final String date;
   final String title;
-  final String? imageAsset;
-  final String? imageFilePath;
-  final bool showLabel;
+  final String? imageAsset;    // Fallback image
+  final String? imageFilePath; // Local path to scan image
+  final bool showLabel;        // Toggle for "Most Recent" tag
 
-  // FIXED: Updated parameters to match PDF builder requirements
+  // Data required for re-generating the PDF report
   final String? userName;
   final String? confidence;
-  final String? classificationScore; // Added classificationScore
+  final String? classificationScore;
   final String? explanationText;
 
   const ResultCard({
@@ -28,7 +75,7 @@ class ResultCard extends StatefulWidget {
     this.showLabel = false,
     this.userName,
     this.confidence,
-    this.classificationScore, // Added to constructor
+    this.classificationScore,
     this.explanationText,
   });
 
@@ -37,12 +84,19 @@ class ResultCard extends StatefulWidget {
 }
 
 class _ResultCardState extends State<ResultCard> {
-  bool _isGenerating = false;
+  // -- LOCAL STATE --
+  bool _isGenerating = false; // Locks UI during PDF generation
 
+  /*
+   * Function: _generateAndSharePdf
+   * Purpose: Re-creates the PDF report from stored metadata and opens the share sheet.
+   */
   Future<void> _generateAndSharePdf(BuildContext context) async {
+    // Control: Prevent double-taps
     if (_isGenerating) return;
 
-    // FIXED: Check for all required data including classificationScore
+    // -- CONTROL: DATA VALIDATION --
+    // Ensure all components needed for the PDF exist before calling the service
     if (widget.userName == null ||
         widget.confidence == null ||
         widget.classificationScore == null ||
@@ -62,7 +116,7 @@ class _ResultCardState extends State<ResultCard> {
     setState(() => _isGenerating = true);
 
     try {
-      // Show loading indicator
+      // UI Feedback: Show snackbar while processing
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -88,24 +142,25 @@ class _ResultCardState extends State<ResultCard> {
         ),
       );
 
-      // FIXED: Generate PDF with all required parameters including classificationScore
+      // -- ALGORITHM: PDF GENERATION --
+      // Call the PdfBuilder service
       final pdfBytes = await generateReportPdf(
         userName: widget.userName!,
         classification: widget.title,
         confidence: widget.confidence!,
-        classificationScore: widget.classificationScore!, // Added classificationScore
+        classificationScore: widget.classificationScore!,
         explanationText: widget.explanationText!,
       );
 
+      // -- ALGORITHM: FILE I/O --
+      // Save to temp storage to allow sharing
       final fileName = 'A-EYE_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-
-      // Save to temporary directory
       final tempDir = await getTemporaryDirectory();
       final filePath = '${tempDir.path}/$fileName';
       final file = File(filePath);
       await file.writeAsBytes(pdfBytes);
 
-      // Share the file
+      // -- CONTROL: SHARE SHEET --
       await Share.shareXFiles(
         [XFile(filePath)],
         text: 'A-Eye Cataract Report - ${widget.title}',
@@ -146,10 +201,11 @@ class _ResultCardState extends State<ResultCard> {
 
   @override
   Widget build(BuildContext context) {
+    // -- ALGORITHM: RESPONSIVE LAYOUT --
+    // Calculate all dimensions relative to screen size for consistency
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // Responsive sizing based on screen dimensions
     final imageSize = screenWidth * 0.2;
     final labelFontSize = screenWidth * 0.0375;
     final dateFontSize = screenWidth * 0.0375;
@@ -157,7 +213,7 @@ class _ResultCardState extends State<ResultCard> {
     final warningFontSize = screenWidth * 0.035;
     final loadingFontSize = screenWidth * 0.035;
 
-    // Responsive padding and spacing
+    // Styles
     final cardMargin = EdgeInsets.only(bottom: screenHeight * 0.015);
     final cardPadding = EdgeInsets.all(screenWidth * 0.04);
     final labelPadding = EdgeInsets.only(bottom: screenHeight * 0.01);
@@ -165,6 +221,7 @@ class _ResultCardState extends State<ResultCard> {
     final textSpacing = screenHeight * 0.008;
     final warningTopPadding = screenHeight * 0.015;
 
+    // Control: Determine image source (Local File vs Asset Placeholder)
     final imageWidget = widget.imageFilePath != null
         ? Image.file(
       File(widget.imageFilePath!),
@@ -186,12 +243,14 @@ class _ResultCardState extends State<ResultCard> {
       fit: BoxFit.cover,
     );
 
+    // Logic: Determine severity for styling
     final bool isMature = widget.title.toLowerCase().contains('mature') &&
         !widget.title.toLowerCase().contains('immature');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // "Most Recent" Label
         if (widget.showLabel)
           Padding(
             padding: labelPadding,
@@ -203,7 +262,10 @@ class _ResultCardState extends State<ResultCard> {
               ),
             ),
           ),
+
+        // Main Card Body
         InkWell(
+          // Control: Trigger PDF generation on tap
           onTap: _isGenerating ? null : () => _generateAndSharePdf(context),
           borderRadius: BorderRadius.circular(24),
           splashColor: const Color(0xFF5244F3).withOpacity(0.2),
@@ -224,6 +286,7 @@ class _ResultCardState extends State<ResultCard> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Left Side: Image + Save Icon
                     Column(
                       children: [
                         ClipRRect(
@@ -253,6 +316,8 @@ class _ResultCardState extends State<ResultCard> {
                       ],
                     ),
                     SizedBox(width: imageSpacing),
+
+                    // Right Side: Text Details
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,17 +338,18 @@ class _ResultCardState extends State<ResultCard> {
                               color: Colors.white,
                             ),
                           ),
+                          // Conditional Warning for Mature Cataracts
                           if (isMature)
                             Padding(
                               padding: EdgeInsets.only(top: warningTopPadding),
                               child: Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.symmetric(
-                                  horizontal: screenWidth * 0.027, // specifically 27 so it doesnt overflow
+                                  horizontal: screenWidth * 0.027,
                                   vertical: screenHeight * 0.012,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0x26FF6767),
+                                  color: const Color(0x26FF6767), // Red Background
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Row(
@@ -314,7 +380,8 @@ class _ResultCardState extends State<ResultCard> {
                     ),
                   ],
                 ),
-                // Loading overlay
+
+                // Loading Overlay (Visible during PDF Generation)
                 if (_isGenerating)
                   Positioned.fill(
                     child: Container(
